@@ -2,15 +2,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Home, Folder, Users, Settings, LogOut, Menu, Plus, Share2, CreditCard, LaptopMinimal } from "lucide-react";
+import { Home, Settings, LogOut, Menu, Share2, CreditCard, LaptopMinimal } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 
 const mainLinks = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
-  { href: "/portals", label: "Portals", icon: LaptopMinimal },
-  { href: "/create-portal", label: "Create Portal", icon: Plus },
+  { href: "/portal", label: "Portals", icon: LaptopMinimal },
   { href: "/shared-links", label: "Shared Links", icon: Share2 },
   { href: "/subscriptions", label: "Subscriptions", icon: CreditCard },
 ];

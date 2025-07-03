@@ -1,5 +1,6 @@
 // Password utility functions
 // Note: Install bcryptjs with: npm install bcryptjs @types/bcryptjs
+import bcrypt from 'bcryptjs';
 
 /**
  * Hash a plain text password
@@ -7,13 +8,8 @@
  * @returns Hashed password
  */
 export async function hashPassword(password: string): Promise<string> {
-  // TODO: Install bcryptjs - npm install bcryptjs @types/bcryptjs
-  // const bcrypt = await import('bcryptjs')
-  // const saltRounds = 12
-  // return bcrypt.hash(password, saltRounds)
-  
-  // Placeholder implementation
-  throw new Error('Please install bcryptjs and implement password hashing')
+  const saltRounds = 12;
+  return bcrypt.hash(password, saltRounds);
 }
 
 /**
@@ -23,12 +19,7 @@ export async function hashPassword(password: string): Promise<string> {
  * @returns True if passwords match
  */
 export async function verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
-  // TODO: Install bcryptjs - npm install bcryptjs @types/bcryptjs
-  // const bcrypt = await import('bcryptjs')
-  // return bcrypt.compare(password, hashedPassword)
-  
-  // Placeholder implementation
-  throw new Error('Please install bcryptjs and implement password verification')
+  return bcrypt.compare(password, hashedPassword);
 }
 
 /**

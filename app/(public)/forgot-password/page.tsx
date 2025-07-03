@@ -25,7 +25,7 @@ export default function ForgotPasswordPage() {
       if (!response.ok) {
         throw new Error("Failed to send OTP");
       }
-      toast.success("If an account with that email exists, a password reset link has been sent.");
+      toast.success("A 6-digit code has been sent to your email.");
       router.push(`/otp?email=${encodeURIComponent(email)}`);
       setEmail("");
     } catch (error) {
