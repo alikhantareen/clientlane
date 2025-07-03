@@ -6,7 +6,6 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../lib/generated/prisma"
 }
 
 datasource db {
@@ -14,58 +13,179 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// User model for authentication and user management
-model User {
-  id          String   @id @default(cuid())
-  email       String   @unique
-  username    String?  @unique
-  firstName   String?
-  lastName    String?
-  password    String   // Store hashed password
-  avatar      String?  // URL to user avatar image
-  isActive    Boolean  @default(true)
-  isVerified  Boolean  @default(false)
-  role        UserRole @default(USER)
-  
-  // Timestamps
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  lastLoginAt DateTime?
-  
-  // Email verification
-  emailVerificationToken String?
-  emailVerificationExpires DateTime?
-  
-  // Password reset
-  passwordResetToken String?
-  passwordResetExpires DateTime?
-  
-  // Relations (add more as needed)
-  // sessions    Session[]
-  // posts       Post[]
-  
-  @@map("users")
-}
-
-// Enum for user roles
 enum UserRole {
-  USER
-  ADMIN
-  MODERATOR
+  freelancer
+  client
 }
 
-// Optional: Session model for authentication
-// Uncomment and modify as needed for your auth strategy
-/*
-model Session {
-  id        String   @id @default(cuid())
-  sessionToken String @unique
-  userId    String
-  expires   DateTime
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  @@map("sessions")
+enum PortalStatus {
+  active
+  pending
+  archived
 }
-*/
+
+enum ActivityType {
+  upload
+  comment
+  status_change
+}
+
+enum NotificationType {
+  new_comment
+  file_uploaded
+  portal_updated
+}
+
+enum BillingCycle {
+  monthly
+  yearly
+}
+
+model User {
+  id              String          @id @default(uuid())
+  name            String
+  email           String          @unique
+  password_hash   String
+  role            UserRole
+  created_at      DateTime        @default(now())
+  // Relations
+  created_portals Portal[]        @relation("FreelancerPortals")
+  client_portals  Portal[]        @relation("ClientPortals")
+  comments        Comment[]
+  activities      Activity[]
+  notifications   Notification[]
+  subscriptions   Subscription[]
+  files           File[]
+}
+
+model Portal {
+  id            String          @id @default(uuid())
+  name          String
+  description   String
+  status        PortalStatus
+  thumbnail_url String
+  created_by    String
+  client_id     String
+  created_at    DateTime        @default(now())
+  updated_at    DateTime        @default(now())
+  // Relations
+  freelancer    User            @relation("FreelancerPortals", fields: [created_by], references: [id])
+  client        User            @relation("ClientPortals", fields: [client_id], references: [id])
+  shared_links  SharedLink[]
+  comments      Comment[]
+  activities    Activity[]
+  files         File[]
+  notifications Notification[]
+  portal_tags   PortalTag[]
+}
+
+model SharedLink {
+  id             String    @id @default(uuid())
+  portal_id      String
+  token          String
+  is_revoked     Boolean
+  expires_at     DateTime
+  last_viewed_at DateTime
+  created_at     DateTime  @default(now())
+  // Relations
+  portal         Portal    @relation(fields: [portal_id], references: [id])
+}
+
+model Comment {
+  id         String    @id @default(uuid())
+  portal_id  String
+  user_id    String
+  content    String
+  created_at DateTime  @default(now())
+  // Relations
+  portal     Portal    @relation(fields: [portal_id], references: [id])
+  user       User      @relation(fields: [user_id], references: [id])
+}
+
+model Activity {
+  id         String        @id @default(uuid())
+  portal_id  String
+  user_id    String
+  type       ActivityType
+  meta       Json
+  created_at DateTime      @default(now())
+  // Relations
+  portal     Portal        @relation(fields: [portal_id], references: [id])
+  user       User          @relation(fields: [user_id], references: [id])
+}
+
+model Tag {
+  id          String      @id @default(uuid())
+  name        String
+  portal_tags PortalTag[]
+}
+
+model PortalTag {
+  portal_id String
+  tag_id    String
+  // Relations
+  portal    Portal   @relation(fields: [portal_id], references: [id])
+  tag       Tag      @relation(fields: [tag_id], references: [id])
+  @@id([portal_id, tag_id])
+}
+
+model Notification {
+  id         String            @id @default(uuid())
+  user_id    String
+  portal_id  String
+  type       NotificationType
+  message    String
+  is_read    Boolean
+  created_at DateTime          @default(now())
+  // Relations
+  user       User              @relation(fields: [user_id], references: [id])
+  portal     Portal            @relation(fields: [portal_id], references: [id])
+}
+
+model Plan {
+  id            String        @id @default(uuid())
+  name          String
+  price         Decimal
+  currency      String        @default("USD")
+  billing_cycle BillingCycle
+  is_active     Boolean       @default(true)
+  created_at    DateTime      @default(now())
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  id         String    @id @default(uuid())
+  user_id    String
+  plan_id    String
+  starts_at  DateTime  @default(now())
+  ends_at    DateTime
+  is_active  Boolean   @default(true)
+  canceled_at DateTime?
+  // Relations
+  user      User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  plan      Plan       @relation(fields: [plan_id], references: [id])
+}
+
+model File {
+  id         String    @id @default(uuid())
+  portal_id  String
+  user_id    String?
+  file_name  String
+  file_url   String
+  file_type  String
+  file_size  Int
+  uploaded_at DateTime @default(now())
+  // Relations
+  portal     Portal    @relation(fields: [portal_id], references: [id], onDelete: Cascade)
+  user       User?     @relation(fields: [user_id], references: [id], onDelete: SetNull)
+}
+
+model OTP {
+  id         String   @id @default(uuid())
+  email      String
+  code       String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  @@unique([email])
+}

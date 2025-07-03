@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getToken } from 'next-auth/jwt'
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   // Get the pathname of the request (e.g. /, /protected/dashboard, etc.)
   const path = request.nextUrl.pathname
 
@@ -11,6 +12,9 @@ export function middleware(request: NextRequest) {
                       path.startsWith('/contact') ||
                       path.startsWith('/login') ||
                       path.startsWith('/signup') ||
+                      path.startsWith('/forgot-password') ||
+                      path.startsWith('/reset-password') ||
+                      path.startsWith('/otp') ||
                       path.startsWith('/api/auth') ||
                       path.startsWith('/_next') ||
                       path.startsWith('/favicon.ico')
@@ -19,26 +23,21 @@ export function middleware(request: NextRequest) {
   const isProtectedPath = path.startsWith('/(protected)') || 
                          path.startsWith('/dashboard')
 
-  // TODO: Implement actual authentication logic here
-  // For now, this is just a placeholder structure
-  
-  // Example authentication check (replace with your actual auth logic):
-  // const token = request.cookies.get('token')?.value || ''
-  // const isAuthenticated = validateToken(token) // Your auth validation function
-  
-  // Placeholder: assume user is not authenticated for demonstration
-  const isAuthenticated = false
+  // Check if user is authenticated using NextAuth JWT
+  const token = await getToken({ 
+    req: request, 
+    secret: process.env.NEXTAUTH_SECRET 
+  })
+  const isAuthenticated = !!token
 
   // Redirect unauthenticated users away from protected routes
   if (isProtectedPath && !isAuthenticated) {
-    // TODO: Replace with your actual login page route
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
   // Redirect authenticated users away from login/signup pages
   if (isAuthenticated && (path === '/login' || path === '/signup')) {
-    // TODO: Replace with your default protected route
-    return NextResponse.redirect(new URL('/(protected)/dashboard', request.url))
+    return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
   // Allow the request to continue
@@ -57,39 +56,4 @@ export const config = {
      */
     '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
-}
-
-// TODO: Implement these helper functions for your authentication system:
-
-/*
-// Example helper functions you might implement:
-
-async function validateToken(token: string): Promise<boolean> {
-  try {
-    // Validate JWT token or session
-    // Return true if valid, false otherwise
-    return false
-  } catch (error) {
-    return false
-  }
-}
-
-async function getUser(token: string) {
-  try {
-    // Decode token and return user data
-    // This could be from JWT payload or database lookup
-    return null
-  } catch (error) {
-    return null
-  }
-}
-
-function isTokenExpired(token: string): boolean {
-  try {
-    // Check if token is expired
-    return true
-  } catch (error) {
-    return true
-  }
-}
-*/ 
+} 

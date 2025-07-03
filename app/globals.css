@@ -1,5 +1,6 @@
+@import "tailwindcss/preflight";
+@import "tailwindcss/utilities";
 @import "tailwindcss";
-@import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -116,8 +117,9 @@
   * {
     @apply border-border outline-ring/50;
   }
-  html {
+  html, body {
     scroll-behavior: smooth;
+    font-family: 'Inter', 'InterVariable', system-ui, sans-serif;
   }
   body {
     @apply bg-background text-foreground;
