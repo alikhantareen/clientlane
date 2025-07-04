@@ -1,9 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { parseISO } from "date-fns";
+import { getToken } from "next-auth/jwt";
 
 export async function GET(req: NextRequest) {
   try {
+    // Check authentication
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    if (!token || !token.sub) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Verify user exists and is a freelancer
+    const user = await prisma.user.findUnique({
+      where: { id: token.sub },
+      select: { id: true, role: true }
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    if (user.role !== "freelancer") {
+      return NextResponse.json({ error: "Only freelancers can view portals" }, { status: 403 });
+    }
+
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "10", 10);
@@ -20,8 +41,10 @@ export async function GET(req: NextRequest) {
       status = statusParam.split(",").map((s) => s.trim()).filter(Boolean);
     }
 
-    // Build where clause
-    const where: any = {};
+    // Build where clause - CRITICAL: Filter by current user's created portals
+    const where: any = {
+      created_by: user.id, // Only show portals created by the current user
+    };
     if (status) {
       if (Array.isArray(status)) {
         where.status = { in: status };
