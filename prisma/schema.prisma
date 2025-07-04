@@ -47,6 +47,7 @@ model User {
   email           String          @unique
   password_hash   String
   role            UserRole
+  image           String?         // Profile image URL
   created_at      DateTime        @default(now())
   // Relations
   created_portals Portal[]        @relation("FreelancerPortals")

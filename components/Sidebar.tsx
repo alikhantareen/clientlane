@@ -2,11 +2,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Home, Settings, LogOut, Menu, Share2, CreditCard, LaptopMinimal } from "lucide-react";
+import { Home, Settings, LogOut, Menu, Share2, CreditCard, LaptopMinimal, User } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { useState, useEffect } from "react";
+import { useUser } from "@/lib/contexts/UserContext";
+import Image from "next/image";
 
 const mainLinks = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
@@ -24,7 +26,7 @@ interface SidebarProps {
 }
 export default function Sidebar({ open, setOpen }: SidebarProps) {
   const pathname = usePathname();
-  const { data: session } = useSession();
+  const { user } = useUser();
 
   // Handle window resize to properly control sidebar behavior
   const [isLargeScreen, setIsLargeScreen] = useState(false);
@@ -134,11 +136,21 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
         <div className="p-4 border-t border-gray-800 mt-auto">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-lg font-semibold">
-              {session?.user?.name?.charAt(0)}
+              {user?.image ? (
+                <Image
+                  src={user.image}
+                  alt={user.name || "Profile"}
+                  width={40}
+                  height={40}
+                  className="w-full h-full object-cover rounded-full"
+                />
+              ) : (
+                <User className="w-5 h-5 text-gray-500" />
+              )}
             </div>
             <div>
-              <div className="font-medium">{session?.user?.name}</div>
-              <div className="text-xs text-gray-400">{session?.user?.email}</div>
+              <div className="font-medium">{user?.name}</div>
+              <div className="text-xs text-gray-400">{user?.email}</div>
             </div>
           </div>
         </div>
