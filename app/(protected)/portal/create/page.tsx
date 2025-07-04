@@ -176,7 +176,7 @@ export default function CreatePortalPage() {
           <Textarea id="welcomeNote" name="welcomeNote" placeholder="Welcome message for your client..." value={form.welcomeNote} onChange={handleChange} />
         </div>
         <div className="md:col-span-2">
-          <Button type="submit" className="w-full bg-black text-white hover:bg-gray-800" disabled={loading}>
+          <Button type="submit" className="w-full bg-black text-white hover:bg-gray-800 cursor-pointer disabled:cursor-not-allowed" disabled={loading}>
             {loading ? "Creating..." : "Create Portal"}
           </Button>
         </div>

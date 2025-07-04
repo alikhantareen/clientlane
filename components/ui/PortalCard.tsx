@@ -91,14 +91,14 @@ export function PortalCard({
       <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mt-auto w-full">
         <Button
           variant="outline"
-          className="flex-1 sm:min-w-[100px] h-7 sm:h-[28px] rounded-[5px] border border-[#9E9E9E] text-black text-xs sm:text-[14px] font-normal px-2 sm:px-3 hover:bg-[#c5c5c5] transition-colors"
+          className="flex-1 sm:min-w-[100px] h-7 sm:h-[28px] rounded-[5px] border border-[#9E9E9E] text-black text-xs sm:text-[14px] font-normal px-2 sm:px-3 hover:bg-[#c5c5c5] transition-colors cursor-pointer"
           style={{ background: "#D9D9D9" }}
           onClick={onShareLink}
         >
           {shareLabel}
         </Button>
         <Button
-          className="flex-1 sm:min-w-[100px] h-7 sm:h-[28px] rounded-[5px] border border-[#9E9E9E] bg-black text-white text-xs sm:text-[14px] font-bold px-2 sm:px-3 hover:bg-gray-800 transition-colors"
+          className="flex-1 sm:min-w-[100px] h-7 sm:h-[28px] rounded-[5px] border border-[#9E9E9E] bg-black text-white text-xs sm:text-[14px] font-bold px-2 sm:px-3 hover:bg-gray-800 transition-colors cursor-pointer"
           onClick={onView}
         >
           {viewLabel}

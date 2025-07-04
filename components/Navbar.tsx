@@ -1,7 +1,7 @@
 "use client";
 import { Bell, User, Menu } from "lucide-react";
-import Image from "next/image";
 import { useUser } from "@/lib/contexts/UserContext";
+import Image from "next/image";
 
 interface NavbarProps {
   setSidebarOpen: React.Dispatch<React.SetStateAction<boolean>>;

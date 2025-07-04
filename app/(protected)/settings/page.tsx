@@ -371,7 +371,7 @@ export default function SettingsPage() {
             
             <Button 
               type="submit" 
-              className="bg-black text-white hover:bg-gray-800 gap-2"
+              className="bg-black text-white hover:bg-gray-800 gap-2 cursor-pointer disabled:cursor-not-allowed"
               disabled={loading || !hasProfileChanges()}
             >
               {loading ? (
@@ -421,7 +421,7 @@ export default function SettingsPage() {
               <Button 
                 onClick={handleVerifyPassword}
                 disabled={!passwordForm.currentPassword || passwordLoading}
-                className="bg-black text-white hover:bg-gray-800 gap-2 w-fit"
+                className="bg-black text-white hover:bg-gray-800 gap-2 w-fit cursor-pointer disabled:cursor-not-allowed"
               >
                 {passwordLoading ? (
                   "Verifying..."
@@ -485,7 +485,7 @@ export default function SettingsPage() {
                 <Button 
                   onClick={handleUpdatePassword}
                   disabled={!passwordForm.newPassword || !passwordForm.confirmPassword || passwordLoading}
-                  className="bg-black text-white hover:bg-gray-800 gap-2"
+                  className="bg-black text-white hover:bg-gray-800 gap-2 cursor-pointer disabled:cursor-not-allowed"
                 >
                   {passwordLoading ? (
                     "Updating..."
@@ -500,7 +500,7 @@ export default function SettingsPage() {
                 <Button 
                   onClick={handleCancelPasswordChange}
                   variant="outline"
-                  className="gap-2"
+                  className="gap-2 cursor-pointer disabled:cursor-not-allowed"
                 >
                   <X className="w-4 h-4" />
                   Cancel
