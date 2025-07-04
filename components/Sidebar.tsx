@@ -6,6 +6,7 @@ import { Home, Settings, LogOut, Menu, Share2, CreditCard, LaptopMinimal } from 
 import { signOut } from "next-auth/react";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
+import { useState, useEffect } from "react";
 
 const mainLinks = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
@@ -25,19 +26,38 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
   const pathname = usePathname();
   const { data: session } = useSession();
 
+  // Handle window resize to properly control sidebar behavior
+  const [isLargeScreen, setIsLargeScreen] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const isLarge = window.innerWidth >= 1024;
+      setIsLargeScreen(isLarge);
+      // Auto-close sidebar on mobile when resizing from desktop
+      if (!isLarge && !open) {
+        setOpen(false);
+      }
+    };
+
+    // Initial check
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    
+    return () => window.removeEventListener('resize', handleResize);
+  }, [open, setOpen]);
+
   // Only allow toggling on md and below
   const handleMenuClick = () => {
-    if (window.innerWidth < 1024) {
+    if (!isLargeScreen) {
       setOpen(!open);
     }
   };
 
   // Always open on large screens
-  const isLargeScreen = typeof window !== 'undefined' && window.innerWidth >= 1024;
   const sidebarVisible = isLargeScreen ? true : open;
 
   return (
-    <aside className={`h-screen w-64 bg-black text-white flex flex-col fixed top-0 left-0 z-50 transition-transform duration-300 ${sidebarVisible ? "translate-x-0" : "-translate-x-full"} lg:static lg:translate-x-0`}>
+    <aside className={`h-screen w-64 bg-black text-white flex flex-col fixed top-0 left-0 z-50 transition-transform duration-300 ${sidebarVisible ? "translate-x-0" : "-translate-x-full"} lg:static lg:translate-x-0 lg:h-auto lg:min-h-full lg:self-stretch`}>
       {/* Logo and Hamburger */}
       <div className="h-16 flex items-center px-6 border-b border-gray-800 gap-2">
         <button
@@ -57,7 +77,7 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
               <Link
                 key={href}
                 href={href}
-                className={`flex items-center gap-3 px-4 py-2 rounded-md text-base font-medium transition-colors hover:bg-gray-800/80 ${pathname.startsWith(href) ? "bg-gray-800" : ""}`}
+                className={`flex items-center gap-3 px-4 py-2 rounded-md text-base font-medium transition-colors hover:bg-gray-800/80 ${pathname?.startsWith(href) ? "bg-gray-800" : ""}`}
               >
                 <Icon className="w-5 h-5" />
                 {label}
@@ -69,7 +89,7 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
               <Link
                 key={href}
                 href={href}
-                className={`flex items-center gap-3 px-4 py-2 rounded-md text-base font-medium transition-colors hover:bg-gray-800/80 ${pathname.startsWith(href) ? "bg-gray-800" : ""}`}
+                className={`flex items-center gap-3 px-4 py-2 rounded-md text-base font-medium transition-colors hover:bg-gray-800/80 ${pathname?.startsWith(href) ? "bg-gray-800" : ""}`}
               >
                 <Icon className="w-5 h-5" />
                 {label}

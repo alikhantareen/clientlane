@@ -59,7 +59,7 @@ export default function CreatePortalPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        toast.success("Portal has bee created successfully!");
+        toast.success("Portal has been created successfully!");
         setForm({
           portalName: "",
           clientEmail: "",

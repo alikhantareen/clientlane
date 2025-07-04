@@ -11,7 +11,7 @@ export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen flex bg-gray-50">
+    <div className="h-screen min-h-screen flex bg-gray-50">
       <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} />
       <div className="flex-1 flex flex-col min-w-0">
         <Navbar setSidebarOpen={setSidebarOpen} />
