@@ -165,7 +165,7 @@ export default function AllPortalsPage() {
           <Search className="w-4 h-4 mr-2 text-gray-500 flex-shrink-0" />
           <Input
             className="bg-transparent border-none shadow-none focus:ring-0 focus-visible:ring-0 p-0 text-sm h-6"
-            placeholder="Search..."
+            placeholder="Search portals..."
             value={search}
             onChange={handleSearchChange}
             style={{ boxShadow: "none" }}
