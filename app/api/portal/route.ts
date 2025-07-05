@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
     const createdBy = user.id;
 
     // --- TRANSACTIONAL WORKFLOW ---
-    const result = await prisma.$transaction(async (tx: typeof prisma) => {
+    const result = await prisma.$transaction(async (tx) => {
       // 1. Create client user (or find existing)
       let client = await tx.user.findUnique({ where: { email: clientEmail } });
       let plainPassword = "";
@@ -156,14 +156,72 @@ export async function POST(req: NextRequest) {
       // 4. Send welcome email
       const magicLink = `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/magic-login/${token}`;
       const emailHtml = `
-        <h2>Hi ${clientName},</h2>
-        <p>Welcome to Clientlane!</p>
-        <p>Your portal <b>${name}</b> has been created.</p>
-        <p><b>Welcome Note:</b> ${welcomeNote || ""}</p>
-        <p>Access your portal with this one-click link (valid for 24 hours):<br/>
-        <a href="${magicLink}">${magicLink}</a></p>
-        <p>Your initial password: <b>${plainPassword || "(existing user)"}</b></p>
-        <p>We recommend you change your password after logging in.</p>
+        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+          <div style="background: linear-gradient(135deg, #000000 0%, #333333 100%); padding: 40px 20px; text-align: center;">
+            <h1 style="color: #ffffff; margin: 0; font-size: 32px; font-weight: bold; letter-spacing: -1px;">Clientlane</h1>
+            <p style="color: #cccccc; margin: 10px 0 0 0; font-size: 16px;">Your Client Portal Awaits</p>
+          </div>
+          
+          <div style="padding: 40px 30px;">
+            <h2 style="color: #333333; margin: 0 0 20px 0; font-size: 24px; font-weight: 600;">
+              Welcome to Clientlane!
+            </h2>
+            
+            <p style="color: #555555; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+              Hi <strong>${clientName}</strong>,
+            </p>
+            
+            <p style="color: #555555; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+              Your portal <strong>${name}</strong> has been created and is ready for you to explore! This secure workspace has been set up specifically for you to access project files, updates, and communicate seamlessly.
+            </p>
+            
+            ${welcomeNote ? `
+              <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <h3 style="color: #333333; margin: 0 0 10px 0; font-size: 16px; font-weight: 600;">Personal Message:</h3>
+                <p style="color: #555555; margin: 0; font-size: 14px; line-height: 1.6;">${welcomeNote}</p>
+              </div>
+            ` : ''}
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${magicLink}" style="background: linear-gradient(135deg, #000000 0%, #333333 100%); color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: 600; font-size: 16px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);">
+                Access Your Portal
+              </a>
+            </div>
+            
+            <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 30px 0;">
+              <h3 style="color: #333333; margin: 0 0 15px 0; font-size: 18px;">What you'll find in your portal:</h3>
+              <ul style="color: #555555; margin: 0; padding-left: 20px; line-height: 1.8;">
+                <li>Project files and documents</li>
+                <li>Real-time updates and notifications</li>
+                <li>Direct communication tools</li>
+                <li>Secure, organized workspace</li>
+              </ul>
+            </div>
+            
+            ${plainPassword ? `
+              <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 20px; border-radius: 8px; margin: 30px 0;">
+                <h3 style="color: #856404; margin: 0 0 10px 0; font-size: 16px; font-weight: 600;">Your Login Credentials:</h3>
+                <p style="color: #856404; margin: 0 0 10px 0; font-size: 14px;">
+                  <strong>Email:</strong> ${clientEmail}<br/>
+                  <strong>Password:</strong> ${plainPassword}
+                </p>
+                <p style="color: #856404; margin: 0; font-size: 12px;">
+                  We recommend changing your password after your first login for security.
+                </p>
+              </div>
+            ` : ''}
+            
+            <p style="color: #777777; font-size: 14px; line-height: 1.6; margin: 30px 0 0 0; padding-top: 20px; border-top: 1px solid #eeeeee;">
+              This access link is secure and unique to you. It will expire in 24 hours. If you have any questions, please don't hesitate to reach out.
+            </p>
+          </div>
+          
+          <div style="background-color: #f8f9fa; padding: 20px; text-align: center; border-top: 1px solid #eeeeee;">
+            <p style="color: #999999; font-size: 12px; margin: 0;">
+              © 2024 Clientlane. This email was sent because a portal was created for you.
+            </p>
+          </div>
+        </div>
       `;
       await sendEmail({
         to: clientEmail,

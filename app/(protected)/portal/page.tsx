@@ -6,7 +6,11 @@ import { useEffect, useState } from "react";
 import DefaultPortalImage from "@/public/defaultPortalImage.png";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { useRef } from "react";
 import { CalendarIcon, Search, Filter, ChevronDown, User } from "lucide-react";
@@ -26,7 +30,9 @@ export default function AllPortalsPage() {
   const [status, setStatus] = useState<string[]>([]);
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const searchTimeout = useRef<NodeJS.Timeout | null>(null);
-  const [hasEverLoadedPortals, setHasEverLoadedPortals] = useState<boolean | null>(null);
+  const [hasEverLoadedPortals, setHasEverLoadedPortals] = useState<
+    boolean | null
+  >(null);
 
   // Fetch total portals on mount to determine if any exist
   useEffect(() => {
@@ -65,37 +71,41 @@ export default function AllPortalsPage() {
 
   // Update fetchPortals to accept filters (for now, just pass them, don't use in API call)
   async function fetchPortals(
-    pageNum: number, 
-    replace = false, 
-    searchVal?: string, 
-    statusVal?: string[], 
+    pageNum: number,
+    replace = false,
+    searchVal?: string,
+    statusVal?: string[],
     dateRangeVal?: DateRange | undefined
   ) {
     setLoading(true);
-    
+
     // Use passed values or fall back to current state
     const finalSearchVal = searchVal !== undefined ? searchVal : search;
     const finalStatusVal = statusVal !== undefined ? statusVal : status;
-    const finalDateRangeVal = dateRangeVal !== undefined ? dateRangeVal : dateRange;
+    const finalDateRangeVal =
+      dateRangeVal !== undefined ? dateRangeVal : dateRange;
     const params = new URLSearchParams({
       page: String(pageNum),
       limit: String(limit),
     });
     if (finalSearchVal) params.append("search", finalSearchVal);
-    if (finalStatusVal && finalStatusVal.length > 0) params.append("status", finalStatusVal.join(","));
-    if (finalDateRangeVal?.from) params.append("dateFrom", finalDateRangeVal.from.toISOString());
-    if (finalDateRangeVal?.to) params.append("dateTo", finalDateRangeVal.to.toISOString());
-    
+    if (finalStatusVal && finalStatusVal.length > 0)
+      params.append("status", finalStatusVal.join(","));
+    if (finalDateRangeVal?.from)
+      params.append("dateFrom", finalDateRangeVal.from.toISOString());
+    if (finalDateRangeVal?.to)
+      params.append("dateTo", finalDateRangeVal.to.toISOString());
+
     const res = await fetch(`/api/portals?${params.toString()}`);
     const data = await res.json();
-    
+
     if (replace) {
       setPortals(data.portals);
     } else {
       setPortals((prev) => [...prev, ...data.portals]);
     }
     setTotal(data.total);
-    setHasMore((pageNum * limit) < data.total);
+    setHasMore(pageNum * limit < data.total);
     setLoading(false);
   }
 
@@ -110,21 +120,34 @@ export default function AllPortalsPage() {
     setStatus([]);
     setDateRange(undefined);
     setPage(1);
-    
+
     // Call fetchPortals with explicit undefined for dateRange
     fetchPortals(1, true, "", [], undefined);
   }
 
-  const anyFilterApplied = search || (status && status.length > 0) || (dateRange && (dateRange.from || dateRange.to));
+  const anyFilterApplied =
+    search ||
+    (status && status.length > 0) ||
+    (dateRange && (dateRange.from || dateRange.to));
 
   // When any filter is applied, force hasEverLoadedPortals to true for empty state logic
-  const showNoPortalsFound = !loading && portals?.length === 0 && anyFilterApplied;
-  const showNoPortalsYet = !loading && portals?.length === 0 && !anyFilterApplied && hasEverLoadedPortals === false;
+  const showNoPortalsFound =
+    !loading && portals?.length === 0 && anyFilterApplied;
+  const showNoPortalsYet =
+    !loading &&
+    portals?.length === 0 &&
+    !anyFilterApplied &&
+    hasEverLoadedPortals === false;
 
   return (
     <main className="w-full mx-auto py-2">
       <section className="flex flex-col gap-4 justify-between w-full md:flex-row md:gap-4 items-start md:items-center">
-        <h1 className="text-2xl font-bold mb-4 md:text-3xl">My Portals</h1>
+        <div className="flex flex-col">
+          <h1 className="text-2xl font-bold md:text-3xl">My Portals</h1>
+          <p className="text-gray-600 mt-2">
+            Manage and view all your projects in one place
+          </p>
+        </div>
         <Link
           href="/portal/create"
           className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-black text-white hover:bg-gray-800 hover:text-white cursor-pointer w-full md:w-fit px-4 py-2 gap-2"
@@ -133,7 +156,7 @@ export default function AllPortalsPage() {
           Create Portal
         </Link>
       </section>
-      <hr className="my-4" />
+      <hr className="mt-8 mb-8" />
 
       {/* Portal Filters Section */}
       <section className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3 mb-6 w-full">
@@ -210,7 +233,10 @@ export default function AllPortalsPage() {
         {showNoPortalsYet && (
           <div className="flex flex-col items-center justify-center py-16 text-center text-gray-500">
             <div className="text-2xl font-semibold mb-2">No portals yet</div>
-            <div className="mb-4">You don't have any portals yet. Click below to create your first portal.</div>
+            <div className="mb-4">
+              You don't have any portals yet. Click below to create your first
+              portal.
+            </div>
             <Link
               href="/portal/create"
               className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-black text-white hover:bg-gray-800 hover:text-white px-6 py-2 gap-2"
@@ -222,15 +248,26 @@ export default function AllPortalsPage() {
         )}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
           {loading && portals?.length === 0
-            ? Array.from({ length: 8 }).map((_, i) => <PortalCardSkeleton key={i} />)
+            ? Array.from({ length: 8 }).map((_, i) => (
+                <PortalCardSkeleton key={i} />
+              ))
             : portals?.map((portal) => (
                 <PortalCard
                   key={portal.id}
                   cardImage={portal.thumbnail_url || DefaultPortalImage}
                   initials={portal.clientName?.charAt(0) || "CL"}
                   title={portal.name}
-                  status={portal.status.charAt(0).toUpperCase() + portal.status.slice(1)}
-                  statusColor={portal.status === "active" ? "#268E00" : portal.status === "pending" ? "#FFA500" : "#9E9E9E"}
+                  status={
+                    portal.status.charAt(0).toUpperCase() +
+                    portal.status.slice(1)
+                  }
+                  statusColor={
+                    portal.status === "active"
+                      ? "#268E00"
+                      : portal.status === "pending"
+                        ? "#FFA500"
+                        : "#9E9E9E"
+                  }
                   clientName={`Client: ${portal.clientName}`}
                   lastUpdated={`Last Updated: ${new Date(portal.updated_at).toLocaleDateString()}`}
                   newComments={`${portal.commentsCount} New Comments`}

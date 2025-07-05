@@ -1,8 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { Home, Settings, LogOut, Menu, Share2, CreditCard, LaptopMinimal, User } from "lucide-react";
+import { Home, Settings, LogOut, Menu, Share2, CreditCard, LaptopMinimal, User, Users } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
@@ -13,7 +12,7 @@ import Image from "next/image";
 const mainLinks = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
   { href: "/portal", label: "Portals", icon: LaptopMinimal },
-  { href: "/shared-links", label: "Shared Links", icon: Share2 },
+  { href: "/clients", label: "Clients", icon: Users },
   { href: "/subscriptions", label: "Subscriptions", icon: CreditCard },
 ];
 const bottomLinks = [

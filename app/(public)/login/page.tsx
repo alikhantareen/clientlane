@@ -28,7 +28,44 @@ export default function LoginPage() {
     });
     setLoading(false);
     if (res?.error) {
-      toast.error("Invalid email or password");
+      console.log("🔍 Login error received:", res.error);
+      
+      // Check if error is about email verification
+      if (res.error.includes("verify your email")) {
+        console.log("✅ Email verification error detected, sending OTP...");
+        toast.info("Sending verification code to your email...");
+        
+        try {
+          // Send OTP automatically
+          console.log("📧 Calling send-otp API for email:", email);
+          const otpResponse = await fetch("/api/auth/send-otp", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email }),
+          });
+          
+          console.log("📊 OTP Response status:", otpResponse.status);
+          console.log("📊 OTP Response ok:", otpResponse.ok);
+          
+          if (otpResponse.ok) {
+            const otpData = await otpResponse.json();
+            console.log("📊 OTP Response data:", otpData);
+            toast.success("A verification code has been sent to your email. Please verify to continue.");
+            // Redirect to OTP screen with login source
+            router.push(`/otp?email=${encodeURIComponent(email)}&source=login`);
+          } else {
+            const errorData = await otpResponse.json();
+            console.log("❌ OTP Response error:", errorData);
+            toast.error("Failed to send verification code. Please try again.");
+          }
+        } catch (error) {
+          console.log("❌ OTP Request failed:", error);
+          toast.error("Failed to send verification code. Please try again.");
+        }
+      } else {
+        console.log("❌ Other login error:", res.error);
+        toast.error("Invalid email or password");
+      }
     } else {
       toast.success("Login successful!");
       router.push("/dashboard");

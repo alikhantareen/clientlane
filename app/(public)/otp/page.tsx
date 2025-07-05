@@ -24,12 +24,15 @@ export default function OtpPage() {
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const [email, setEmail] = useState<string | null>(null);
+  const [source, setSource] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const router = useRouter();
 
   useEffect(() => {
-    const emailParam = searchParams.get("email");
+    const emailParam = searchParams?.get("email") || null;
+    const sourceParam = searchParams?.get("source") || null;
     setEmail(emailParam);
+    setSource(sourceParam);
     if (emailParam) {
       localStorage.setItem("pendingEmail", emailParam);
     }
@@ -62,8 +65,20 @@ export default function OtpPage() {
       if (res.ok) {
         toast.success("OTP has been verified successfully.");
         setOtp("");
-        // Route to reset-password with email in URL
-        router.push(`/reset-password?email=${encodeURIComponent(email)}`);
+        // Route based on source: signup goes to login, forgot-password goes to reset-password, login goes to dashboard
+        if (source === "signup") {
+          toast.success("Account verified successfully! Please login with your credentials.");
+          router.push("/login");
+        } else if (source === "forgot-password") {
+          router.push(`/reset-password?email=${encodeURIComponent(email)}`);
+        } else if (source === "login") {
+          toast.success("Email verified successfully! You can now login to your account.");
+          router.push("/login");
+        } else {
+          // Default to login for safety
+          toast.success("Account verified successfully! Please login with your credentials.");
+          router.push("/login");
+        }
       } else {
         const data = await res.json();
         toast.error(data.error || "Failed to verify OTP");
@@ -108,18 +123,39 @@ export default function OtpPage() {
         {/* Left Card (OTP Form) */}
         <div className="flex-1 bg-white p-8 md:p-16 flex flex-col justify-center">
           <div className="mb-8">
-            <h2 className="text-3xl font-semibold mb-2">Enter OTP</h2>
+            <h2 className="text-3xl font-semibold mb-2">
+              {source === "login" ? "Verify Your Email" : "Enter OTP"}
+            </h2>
             <div className="flex items-center gap-2 text-gray-700 text-base">
-              <span>Didn't receive the code?</span>
-              <button
-                type="button"
-                className="text-black font-bold hover:underline cursor-pointer"
-                onClick={handleResend}
-                disabled={resending || !email}
-              >
-                {resending ? "Resending..." : "Resend OTP"}
-              </button>
+              {source === "login" ? (
+                <span>We've sent a verification code to your email to complete the login process.</span>
+              ) : (
+                <>
+                  <span>Didn't receive the code?</span>
+                  <button
+                    type="button"
+                    className="text-black font-bold hover:underline cursor-pointer"
+                    onClick={handleResend}
+                    disabled={resending || !email}
+                  >
+                    {resending ? "Resending..." : "Resend OTP"}
+                  </button>
+                </>
+              )}
             </div>
+            {source === "login" && (
+              <div className="flex items-center gap-2 text-gray-700 text-base mt-2">
+                <span>Didn't receive the code?</span>
+                <button
+                  type="button"
+                  className="text-black font-bold hover:underline cursor-pointer"
+                  onClick={handleResend}
+                  disabled={resending || !email}
+                >
+                  {resending ? "Resending..." : "Resend OTP"}
+                </button>
+              </div>
+            )}
             {!email && <div className="text-red-500 text-sm mt-2">Email is required in the URL to resend OTP.</div>}
           </div>
           <form onSubmit={handleSubmit} className="space-y-6">

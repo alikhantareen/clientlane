@@ -130,6 +130,46 @@ export type Theme = 'light' | 'dark' | 'system'
 // Status types
 export type Status = 'idle' | 'loading' | 'success' | 'error'
 
+// Client-specific types for the clients page
+export interface ClientData {
+  id: string
+  name: string
+  email: string
+  image?: string
+  password_hash?: string
+  last_seen_at?: Date
+  invited_by_id?: string
+  created_at: Date
+  // Computed fields
+  portal_count: number
+  status: 'invited' | 'active' | 'inactive'
+  last_active?: Date
+  joined_on: Date
+}
+
+export interface ClientsTableFilters {
+  search: string
+  status: 'all' | 'invited' | 'active' | 'inactive'
+}
+
+export interface ClientsTableParams {
+  page: number
+  limit: number
+  search?: string
+  status?: string
+}
+
+export interface ClientsApiResponse {
+  clients: ClientData[]
+  total: number
+  page: number
+  limit: number
+  pages: number
+}
+
+// Action types for the clients table
+export type ClientAction = 'view' | 'resend-invite'
+
 // Common enum-like types
 export const USER_ROLES = {
   USER: 'USER',

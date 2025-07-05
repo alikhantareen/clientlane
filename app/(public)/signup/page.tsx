@@ -73,7 +73,7 @@ export default function SignupPage() {
     setLoading(false);
     if (res.ok) {
       toast.success("A 6-digit verification code has been sent to your email. Please enter it below to verify your account.", { duration: 7000 });
-      router.push(`/otp?email=${encodeURIComponent(form.email)}`);
+      router.push(`/otp?email=${encodeURIComponent(form.email)}&source=signup`);
       setForm({ name: "", email: "", password: "", confirmPassword: "", role: "freelancer" });
     } else {
       const data = await res.json();

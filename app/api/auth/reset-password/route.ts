@@ -22,7 +22,10 @@ export async function POST(req: NextRequest) {
     const password_hash = await hash(password, 10);
     await prisma.user.update({
       where: { email },
-      data: { password_hash },
+      data: { 
+        password_hash,
+        email_verified: true // Mark as verified since they proved access to email
+      } as any,
     });
     return NextResponse.json({ message: "Password has been reset successfully." }, { status: 200 });
   } catch (err) {
