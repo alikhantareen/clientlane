@@ -17,8 +17,10 @@ import { CalendarIcon, Search, Filter, ChevronDown, User } from "lucide-react";
 import { format } from "date-fns";
 import type { DateRange } from "react-day-picker";
 import { StatusMultiSelect } from "@/components/ui/StatusMultiSelect";
+import { useRouter } from "next/navigation";
 
 export default function AllPortalsPage() {
+  const router = useRouter();
   const [portals, setPortals] = useState<any[]>([]);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -272,7 +274,7 @@ export default function AllPortalsPage() {
                   lastUpdated={`Last Updated: ${new Date(portal.updated_at).toLocaleDateString()}`}
                   newComments={`${portal.commentsCount} New Comments`}
                   onShareLink={() => {}}
-                  onView={() => {}}
+                  onView={() => router.push(`/portal/${portal.id}`)}
                 />
               ))}
         </div>
