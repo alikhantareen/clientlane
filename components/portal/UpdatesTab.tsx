@@ -1,10 +1,32 @@
 "use client";
 
-import { useState } from "react";
-import { Search, Plus } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Search, Plus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AddUpdateModal } from "./AddUpdateModal";
+import { formatDistanceToNow } from "date-fns";
+
+interface Update {
+  id: string;
+  title: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    image: string | null;
+  };
+  files: Array<{
+    id: string;
+    file_name: string;
+    file_url: string;
+    file_type: string;
+    file_size: number;
+  }>;
+}
 
 interface UpdatesTabProps {
   portalId: string;
@@ -13,9 +35,57 @@ interface UpdatesTabProps {
 export function UpdatesTab({ portalId }: UpdatesTabProps) {
   const [updatesSearch, setUpdatesSearch] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [updates, setUpdates] = useState<Update[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchUpdates = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await fetch(`/api/updates?portalId=${portalId}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch updates");
+      }
+      
+      const data = await response.json();
+      setUpdates(data.updates || []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to fetch updates");
+      console.error("Error fetching updates:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUpdates();
+  }, [portalId]);
 
   const handleAddUpdate = () => {
     setIsModalOpen(true);
+  };
+
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+    // Refresh updates after modal closes (in case an update was created)
+    fetchUpdates();
+  };
+
+  // Filter updates based on search
+  const filteredUpdates = updates.filter(update =>
+    update.title.toLowerCase().includes(updatesSearch.toLowerCase()) ||
+    update.content.toLowerCase().includes(updatesSearch.toLowerCase()) ||
+    update.user.name.toLowerCase().includes(updatesSearch.toLowerCase())
+  );
+
+  const getUserInitials = (name: string) => {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  };
+
+  const stripHtmlTags = (html: string) => {
+    return html.replace(/<[^>]*>/g, '');
   };
 
   return (
@@ -50,68 +120,120 @@ export function UpdatesTab({ portalId }: UpdatesTabProps) {
 
       {/* Updates List */}
       <div className="space-y-4">
-        {/* Sample Update Items - Replace with actual data later */}
-        <div className="bg-gray-50 rounded-lg p-4">
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center flex-shrink-0">
-              <span className="text-white text-sm font-medium">JD</span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="font-medium text-gray-900">John Doe</span>
-                <span className="text-sm text-gray-500">June 25, 2025</span>
-                <span className="text-sm text-gray-500 ml-auto">3 comments</span>
-              </div>
-              <p className="text-gray-700 text-sm leading-relaxed">
-                The logo concepts look great! I'll share some feedback soon.
-              </p>
-            </div>
+        {/* Loading State */}
+        {loading && (
+          <div className="flex justify-center items-center py-8">
+            <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
+            <span className="ml-2 text-gray-500">Loading updates...</span>
           </div>
-        </div>
+        )}
 
-        <div className="bg-gray-50 rounded-lg p-4">
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center flex-shrink-0">
-              <span className="text-white text-sm font-medium">JD</span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="font-medium text-gray-900">John Doe</span>
-                <span className="text-sm text-gray-500">2 days ago</span>
-                <span className="text-sm text-gray-500 ml-auto">2 days ago</span>
-              </div>
-              <p className="text-gray-700 text-sm leading-relaxed">
-                Three logo concepts are attached below for your review.
-              </p>
+        {/* Error State */}
+        {error && (
+          <div className="text-center py-8">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <p className="text-red-600">{error}</p>
+              <Button 
+                onClick={fetchUpdates} 
+                variant="outline" 
+                className="mt-2"
+              >
+                Try Again
+              </Button>
             </div>
           </div>
-        </div>
+        )}
 
-        <div className="bg-gray-50 rounded-lg p-4">
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center flex-shrink-0">
-              <span className="text-white text-sm font-medium">PO</span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="font-medium text-gray-900">Portal owner</span>
-                <span className="text-sm text-gray-500">5 days ago</span>
-                <span className="text-sm text-gray-500 ml-auto">5 days ago</span>
+        {/* Updates List */}
+        {!loading && !error && filteredUpdates.length > 0 && (
+          <>
+            {filteredUpdates.map((update) => (
+              <div key={update.id} className="bg-gray-50 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center flex-shrink-0">
+                    {update.user.image ? (
+                      <img 
+                        src={update.user.image} 
+                        alt={update.user.name}
+                        className="w-8 h-8 rounded-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-white text-sm font-medium">
+                        {getUserInitials(update.user.name)}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-medium text-gray-900">{update.user.name}</span>
+                      <span className="text-sm text-gray-500">
+                        {formatDistanceToNow(new Date(update.created_at), { addSuffix: true })}
+                      </span>
+                      {update.files.length > 0 && (
+                        <span className="text-sm text-gray-500 ml-auto">
+                          {update.files.length} file{update.files.length > 1 ? 's' : ''}
+                        </span>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-gray-900 text-sm font-medium">
+                        {update.title}
+                      </p>
+                      <p className="text-gray-700 text-sm leading-relaxed">
+                        {stripHtmlTags(update.content)}
+                      </p>
+                      {/* Files List */}
+                      {update.files.length > 0 && (
+                        <div className="mt-3 space-y-2">
+                          <p className="text-sm font-medium text-gray-600">Attached files:</p>
+                          <div className="space-y-1">
+                            {update.files.map((file) => (
+                              <div key={file.id} className="flex items-center gap-2">
+                                <a
+                                  href={file.file_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-sm text-blue-600 hover:text-blue-800 underline"
+                                >
+                                  {file.file_name}
+                                </a>
+                                <span className="text-xs text-gray-500">
+                                  ({Math.round(file.file_size / 1024)}KB)
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="space-y-2">
-                <p className="text-gray-900 text-sm font-medium">
-                  Initial project kickoff
-                </p>
-                <p className="text-gray-700 text-sm leading-relaxed">
-                  Welcome to the client portal for the logo redesign project. Updates and files will be shared here.
-                </p>
-              </div>
+            ))}
+          </>
+        )}
+
+        {/* Empty state when no updates exist */}
+        {!loading && !error && updates.length === 0 && (
+          <div className="text-center py-8">
+            <div className="bg-gray-50 rounded-lg p-8">
+              <Search className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                No updates yet
+              </h3>
+              <p className="text-gray-600 mb-4">
+                Be the first to share an update for this portal.
+              </p>
+              <Button onClick={handleAddUpdate} className="bg-black text-white hover:bg-gray-800">
+                <Plus className="w-4 h-4 mr-2" />
+                Add Update
+              </Button>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Empty state when no updates match search */}
-        {updatesSearch && (
+        {!loading && !error && updates.length > 0 && filteredUpdates.length === 0 && updatesSearch && (
           <div className="text-center py-8">
             <Search className="w-12 h-12 mx-auto text-gray-400 mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
@@ -127,7 +249,7 @@ export function UpdatesTab({ portalId }: UpdatesTabProps) {
       {/* Add Update Modal */}
       <AddUpdateModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={handleModalClose}
         portalId={portalId}
       />
     </div>

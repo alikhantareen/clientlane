@@ -60,6 +60,7 @@ model User {
   notifications   Notification[]
   subscriptions   Subscription[]
   files           File[]
+  updates         Update[]
   // Self-referential relation for invitations
   invited_by      User?           @relation("UserInvitations", fields: [invited_by_id], references: [id])
   invited_users   User[]          @relation("UserInvitations")
@@ -84,6 +85,7 @@ model Portal {
   files         File[]
   notifications Notification[]
   portal_tags   PortalTag[]
+  updates       Update[]
 }
 
 model SharedLink {
@@ -173,10 +175,25 @@ model Subscription {
   plan      Plan       @relation(fields: [plan_id], references: [id])
 }
 
+model Update {
+  id         String    @id @default(uuid())
+  title      String
+  content    String    // HTML content from rich text editor
+  portal_id  String
+  user_id    String
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  // Relations
+  portal     Portal    @relation(fields: [portal_id], references: [id], onDelete: Cascade)
+  user       User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  files      File[]    @relation("UpdateFiles")
+}
+
 model File {
   id         String    @id @default(uuid())
   portal_id  String
   user_id    String?
+  update_id  String?   // Optional - for files attached to updates
   file_name  String
   file_url   String
   file_type  String
@@ -185,6 +202,7 @@ model File {
   // Relations
   portal     Portal    @relation(fields: [portal_id], references: [id], onDelete: Cascade)
   user       User?     @relation(fields: [user_id], references: [id], onDelete: SetNull)
+  update     Update?   @relation("UpdateFiles", fields: [update_id], references: [id], onDelete: SetNull)
 }
 
 model OTP {

@@ -67,16 +67,30 @@ export function AddUpdateModal({ isOpen, onClose, portalId }: AddUpdateModalProp
 
     setIsLoading(true);
     try {
-      // TODO: Implement API call to create update
-      console.log("Creating update:", {
-        portalId,
-        title,
-        content,
-        files: files.map(f => f.name)
-      });
+      // Prepare form data
+      const formData = new FormData();
+      formData.append("title", title);
+      formData.append("content", content);
+      formData.append("portalId", portalId);
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Add files to form data
+      files.forEach((file) => {
+        formData.append("files", file);
+      });
+
+      // Make API call to create update
+      const response = await fetch("/api/updates", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to create update");
+      }
+
+      const data = await response.json();
+      console.log("Update created successfully:", data);
       
       // Reset form and close modal
       setTitle("");
@@ -85,6 +99,7 @@ export function AddUpdateModal({ isOpen, onClose, portalId }: AddUpdateModalProp
       onClose();
     } catch (error) {
       console.error("Error creating update:", error);
+      // You might want to show an error message to the user here
     } finally {
       setIsLoading(false);
     }
