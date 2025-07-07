@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, Plus, Loader2 } from "lucide-react";
+import { Search, Plus, Loader2, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AddUpdateModal } from "./AddUpdateModal";
 import { formatDistanceToNow } from "date-fns";
+import { useRouter } from "next/navigation";
 
 interface Update {
   id: string;
@@ -33,6 +34,7 @@ interface UpdatesTabProps {
 }
 
 export function UpdatesTab({ portalId }: UpdatesTabProps) {
+  const router = useRouter();
   const [updatesSearch, setUpdatesSearch] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [updates, setUpdates] = useState<Update[]>([]);
@@ -148,7 +150,11 @@ export function UpdatesTab({ portalId }: UpdatesTabProps) {
         {!loading && !error && filteredUpdates.length > 0 && (
           <>
             {filteredUpdates.map((update) => (
-              <div key={update.id} className="bg-gray-50 rounded-lg p-4">
+              <div 
+                key={update.id} 
+                className="bg-gray-50 rounded-lg p-4 cursor-pointer hover:bg-gray-100 transition-colors"
+                onClick={() => router.push(`/portal/${portalId}/update/${update.id}`)}
+              >
                 <div className="flex items-start gap-3">
                   <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center flex-shrink-0">
                     {update.user.image ? (
@@ -179,9 +185,10 @@ export function UpdatesTab({ portalId }: UpdatesTabProps) {
                       <p className="text-gray-900 text-sm font-medium">
                         {update.title}
                       </p>
-                      <p className="text-gray-700 text-sm leading-relaxed">
-                        {stripHtmlTags(update.content)}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <MessageCircle className="w-4 h-4 text-gray-500" />
+                        <span className="text-sm text-gray-500">Click to view details and replies</span>
+                      </div>
                       {/* Files List */}
                       {update.files.length > 0 && (
                         <div className="mt-3 space-y-2">
@@ -194,6 +201,7 @@ export function UpdatesTab({ portalId }: UpdatesTabProps) {
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="text-sm text-blue-600 hover:text-blue-800 underline"
+                                  onClick={(e) => e.stopPropagation()}
                                 >
                                   {file.file_name}
                                 </a>

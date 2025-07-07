@@ -4,7 +4,7 @@ import { getToken } from "next-auth/jwt";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check authentication
@@ -27,7 +27,7 @@ export async function GET(
       return NextResponse.json({ error: "Only freelancers can view portals" }, { status: 403 });
     }
 
-    const portalId = params.id;
+    const { id: portalId } = await params;
 
     // Find portal and ensure it belongs to the current user
     const portal = await prisma.portal.findFirst({

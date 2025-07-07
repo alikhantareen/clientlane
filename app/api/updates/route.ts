@@ -191,10 +191,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Portal not found or access denied" }, { status: 404 });
     }
 
-    // Fetch updates for this portal
+    // Fetch updates for this portal (only root updates, not replies)
     const [updates, total] = await Promise.all([
       prisma.update.findMany({
-        where: { portal_id: portalId },
+        where: { 
+          portal_id: portalId,
+          parent_update_id: null, // Only root updates
+        },
         include: {
           user: {
             select: {
@@ -218,7 +221,7 @@ export async function GET(req: NextRequest) {
         skip,
         take: limitNum,
       }),
-      prisma.update.count({ where: { portal_id: portalId } }),
+      prisma.update.count({ where: { portal_id: portalId, parent_update_id: null } }),
     ]);
 
     return NextResponse.json({

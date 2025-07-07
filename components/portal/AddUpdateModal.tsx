@@ -284,6 +284,7 @@ export function AddUpdateModal({ isOpen, onClose, portalId }: AddUpdateModalProp
               variant="outline"
               onClick={handleCancel}
               disabled={isLoading}
+              className="cursor-pointer"
             >
               Cancel
             </Button>
@@ -291,7 +292,7 @@ export function AddUpdateModal({ isOpen, onClose, portalId }: AddUpdateModalProp
               type="button"
               onClick={handleSubmit}
               disabled={isLoading || !title.trim() || !editor?.getHTML().trim()}
-              className="bg-black text-white hover:bg-gray-800"
+              className="bg-black text-white hover:bg-gray-800 cursor-pointer"
             >
               {isLoading ? "Posting..." : "Post"}
             </Button>

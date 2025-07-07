@@ -176,17 +176,20 @@ model Subscription {
 }
 
 model Update {
-  id         String    @id @default(uuid())
-  title      String
-  content    String    // HTML content from rich text editor
-  portal_id  String
-  user_id    String
-  created_at DateTime  @default(now())
-  updated_at DateTime  @updatedAt
+  id               String    @id @default(uuid())
+  title            String
+  content          String    // HTML content from rich text editor
+  portal_id        String
+  user_id          String
+  parent_update_id String?   // For threaded replies - null for root updates
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @updatedAt
   // Relations
-  portal     Portal    @relation(fields: [portal_id], references: [id], onDelete: Cascade)
-  user       User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  files      File[]    @relation("UpdateFiles")
+  portal           Portal    @relation(fields: [portal_id], references: [id], onDelete: Cascade)
+  user             User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  files            File[]    @relation("UpdateFiles")
+  parent_update    Update?   @relation("UpdateReplies", fields: [parent_update_id], references: [id], onDelete: Cascade)
+  replies          Update[]  @relation("UpdateReplies")
 }
 
 model File {
