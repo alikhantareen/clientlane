@@ -1,12 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Search, Plus, Loader2, MessageCircle } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Search, Plus, Loader2, MessageCircle, MoreVertical, Edit2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AddUpdateModal } from "./AddUpdateModal";
 import { formatDistanceToNow } from "date-fns";
 import { useRouter } from "next/navigation";
+import { useUser } from "@/lib/contexts/UserContext";
+import { toast } from "sonner";
 
 interface Update {
   id: string;
@@ -35,59 +39,162 @@ interface UpdatesTabProps {
 
 export function UpdatesTab({ portalId }: UpdatesTabProps) {
   const router = useRouter();
+  const { user } = useUser();
+  const [updatesSearchInput, setUpdatesSearchInput] = useState("");
   const [updatesSearch, setUpdatesSearch] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingUpdate, setEditingUpdate] = useState<Update | undefined>(undefined);
+  const [deleteUpdateId, setDeleteUpdateId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [updates, setUpdates] = useState<Update[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalUpdates, setTotalUpdates] = useState(0);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const fetchUpdates = async () => {
+  // Handle search input change with debouncing
+  const handleSearchChange = (value: string) => {
+    setUpdatesSearchInput(value);
+
+    // Clear existing timer
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    // Set new timer
+    searchTimeoutRef.current = setTimeout(() => {
+      setUpdatesSearch(value);
+    }, 500); // 500ms delay
+  };
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const fetchUpdates = async (
+    page: number = 1,
+    searchQuery: string = "",
+    append: boolean = false
+  ) => {
     try {
-      setLoading(true);
+      if (page === 1) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
       setError(null);
-      
-      const response = await fetch(`/api/updates?portalId=${portalId}`);
+
+      const searchParams = new URLSearchParams({
+        portalId,
+        page: page.toString(),
+        limit: "10",
+        ...(searchQuery && { search: searchQuery }),
+      });
+
+      const response = await fetch(`/api/updates?${searchParams}`);
       if (!response.ok) {
         throw new Error("Failed to fetch updates");
       }
-      
+
       const data = await response.json();
-      setUpdates(data.updates || []);
+
+      if (append) {
+        setUpdates((prev) => [...prev, ...data.updates]);
+      } else {
+        setUpdates(data.updates || []);
+      }
+
+      setCurrentPage(data.page);
+      setTotalPages(data.pages);
+      setTotalUpdates(data.total);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch updates");
       console.error("Error fetching updates:", err);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
 
   useEffect(() => {
-    fetchUpdates();
-  }, [portalId]);
+    fetchUpdates(1, updatesSearch);
+  }, [portalId, updatesSearch]);
 
   const handleAddUpdate = () => {
+    setEditingUpdate(undefined);
     setIsModalOpen(true);
+  };
+
+  const handleEditUpdate = (update: Update) => {
+    setEditingUpdate(update);
+    setIsModalOpen(true);
+  };
+
+  const handleDeleteUpdate = (updateId: string) => {
+    setDeleteUpdateId(updateId);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteUpdateId) return;
+
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/updates/${deleteUpdateId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete update");
+      }
+
+      // Remove the deleted update from the list
+      setUpdates(prev => prev.filter(update => update.id !== deleteUpdateId));
+      setTotalUpdates(prev => prev - 1);
+      setDeleteUpdateId(null);
+      toast.success("Update deleted successfully");
+    } catch (error) {
+      console.error("Error deleting update:", error);
+      setError("Failed to delete update");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const cancelDelete = () => {
+    setDeleteUpdateId(null);
   };
 
   const handleModalClose = () => {
     setIsModalOpen(false);
-    // Refresh updates after modal closes (in case an update was created)
-    fetchUpdates();
+    setEditingUpdate(undefined);
+    // Refresh updates after modal closes (in case an update was created/edited)
+    fetchUpdates(1, updatesSearch);
   };
 
-  // Filter updates based on search
-  const filteredUpdates = updates.filter(update =>
-    update.title.toLowerCase().includes(updatesSearch.toLowerCase()) ||
-    update.content.toLowerCase().includes(updatesSearch.toLowerCase()) ||
-    update.user.name.toLowerCase().includes(updatesSearch.toLowerCase())
-  );
+  const handleLoadMore = () => {
+    if (currentPage < totalPages) {
+      fetchUpdates(currentPage + 1, updatesSearch, true);
+    }
+  };
 
   const getUserInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase();
   };
 
   const stripHtmlTags = (html: string) => {
-    return html.replace(/<[^>]*>/g, '');
+    return html.replace(/<[^>]*>/g, "");
   };
 
   return (
@@ -95,19 +202,25 @@ export function UpdatesTab({ portalId }: UpdatesTabProps) {
       {/* Search Bar and Add Button Row */}
       <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-center sm:justify-between">
         {/* Search Bar - Left aligned */}
-        <div className="flex-1 max-w-md">
+        <div className="flex-1 max-w-md flex items-center gap-2">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <Input
               type="text"
-              placeholder="Add an update..."
-              value={updatesSearch}
-              onChange={(e) => setUpdatesSearch(e.target.value)}
+              placeholder="Search for an update..."
+              value={updatesSearchInput}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
             />
           </div>
+          {/* Update count */}
+          {totalUpdates > 0 && (
+            <div className="flex-shrink-0 text-sm text-gray-500 flex items-center gap-2">
+              {totalUpdates} {totalUpdates === 1 ? "update" : "updates"}
+            </div>
+          )}
         </div>
-        
+
         {/* Add Update Button - Right aligned */}
         <div className="flex-shrink-0">
           <Button
@@ -135,9 +248,9 @@ export function UpdatesTab({ portalId }: UpdatesTabProps) {
           <div className="text-center py-8">
             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
               <p className="text-red-600">{error}</p>
-              <Button 
-                onClick={fetchUpdates} 
-                variant="outline" 
+              <Button
+                onClick={() => fetchUpdates(1, updatesSearch)}
+                variant="outline"
                 className="mt-2"
               >
                 Try Again
@@ -147,19 +260,18 @@ export function UpdatesTab({ portalId }: UpdatesTabProps) {
         )}
 
         {/* Updates List */}
-        {!loading && !error && filteredUpdates.length > 0 && (
+        {!loading && !error && updates.length > 0 && (
           <>
-            {filteredUpdates.map((update) => (
-              <div 
-                key={update.id} 
-                className="bg-gray-50 rounded-lg p-4 cursor-pointer hover:bg-gray-100 transition-colors"
-                onClick={() => router.push(`/portal/${portalId}/update/${update.id}`)}
+            {updates.map((update) => (
+              <div
+                key={update.id}
+                className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors relative"
               >
                 <div className="flex items-start gap-3">
                   <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center flex-shrink-0">
                     {update.user.image ? (
-                      <img 
-                        src={update.user.image} 
+                      <img
+                        src={update.user.image}
                         alt={update.user.name}
                         className="w-8 h-8 rounded-full object-cover"
                       />
@@ -171,29 +283,96 @@ export function UpdatesTab({ portalId }: UpdatesTabProps) {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="font-medium text-gray-900">{update.user.name}</span>
+                      <span className="font-medium text-gray-900">
+                        {update.user.name}
+                      </span>
                       <span className="text-sm text-gray-500">
-                        {formatDistanceToNow(new Date(update.created_at), { addSuffix: true })}
+                        {formatDistanceToNow(new Date(update.created_at), {
+                          addSuffix: true,
+                        })}
                       </span>
                     </div>
                     <div className="space-y-2">
-                      <p className="text-gray-900 text-sm font-medium">
+                      <p 
+                        className="text-gray-900 text-sm font-medium cursor-pointer hover:underline"
+                        onClick={() => router.push(`/portal/${portalId}/update/${update.id}`)}
+                      >
                         {update.title}
                       </p>
                       <div className="flex items-center gap-2">
                         <MessageCircle className="w-4 h-4 text-gray-500" />
-                        <span className="text-sm text-gray-500">Click to view details and replies</span>
+                        <span className="text-sm text-gray-500">
+                          Click title to view details and replies
+                        </span>
                       </div>
                     </div>
                   </div>
+                  
+                  {/* Three dots dropdown - Only show for the freelancer who created the update */}
+                  {user && user.id === update.user.id && (
+                    <div className="absolute top-4 right-4 z-10 cursor-pointer">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 hover:bg-gray-200 cursor-pointer"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem 
+                            onClick={() => handleEditUpdate(update)}
+                            className="flex items-center gap-2 cursor-pointer"
+                          >
+                            <Edit2 className="h-4 w-4" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleDeleteUpdate(update.id)}
+                            className="flex items-center gap-2 cursor-pointer text-red-600 focus:text-red-600"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
           </>
         )}
 
+        {/* Load More Button */}
+        {!loading &&
+          !error &&
+          updates.length > 0 &&
+          currentPage < totalPages && (
+            <div className="flex justify-center py-4">
+              <Button
+                onClick={handleLoadMore}
+                disabled={loadingMore}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                {loadingMore ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  <>Load More Updates</>
+                )}
+              </Button>
+            </div>
+          )}
+
         {/* Empty state when no updates exist */}
-        {!loading && !error && updates.length === 0 && (
+        {!loading && !error && updates.length === 0 && !updatesSearchInput && (
           <div className="text-center py-8">
             <div className="bg-gray-50 rounded-lg p-8">
               <Search className="w-12 h-12 mx-auto text-gray-400 mb-4" />
@@ -203,7 +382,10 @@ export function UpdatesTab({ portalId }: UpdatesTabProps) {
               <p className="text-gray-600 mb-4">
                 Be the first to share an update for this portal.
               </p>
-              <Button onClick={handleAddUpdate} className="bg-black text-white hover:bg-gray-800">
+              <Button
+                onClick={handleAddUpdate}
+                className="bg-black text-white hover:bg-gray-800"
+              >
                 <Plus className="w-4 h-4 mr-2" />
                 Add Update
               </Button>
@@ -212,7 +394,7 @@ export function UpdatesTab({ portalId }: UpdatesTabProps) {
         )}
 
         {/* Empty state when no updates match search */}
-        {!loading && !error && updates.length > 0 && filteredUpdates.length === 0 && updatesSearch && (
+        {!loading && !error && updates.length === 0 && updatesSearchInput && (
           <div className="text-center py-8">
             <Search className="w-12 h-12 mx-auto text-gray-400 mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
@@ -225,12 +407,38 @@ export function UpdatesTab({ portalId }: UpdatesTabProps) {
         )}
       </div>
 
-      {/* Add Update Modal */}
+      {/* Add/Edit Update Modal */}
       <AddUpdateModal
         isOpen={isModalOpen}
         onClose={handleModalClose}
         portalId={portalId}
+        editUpdate={editingUpdate}
       />
+
+      {/* Delete Confirmation Modal */}
+      <Dialog open={!!deleteUpdateId} onOpenChange={() => setDeleteUpdateId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Update</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this update? This action cannot be undone.
+              All replies and associated files will also be deleted.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={cancelDelete} disabled={isDeleting}>
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={confirmDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
-} 
+}

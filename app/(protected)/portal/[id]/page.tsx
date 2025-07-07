@@ -4,12 +4,10 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   ArrowLeft,
-  Share2,
   Calendar,
-  User,
-  MessageSquare,
   ExternalLink,
   Presentation,
+  User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,9 +17,7 @@ import {
   OverviewTab,
   UpdatesTab,
   FilesTab,
-  CommentsTab,
   ActivityTab,
-  SettingsTab,
 } from "@/components/portal";
 
 interface PortalData {
@@ -95,9 +91,7 @@ export default function PortalDetailPage() {
     { id: "overview", label: "Overview", icon: Calendar },
     { id: "updates", label: "Updates", icon: Presentation },
     { id: "files", label: "Files", icon: ExternalLink },
-    { id: "comments", label: "Comments", icon: MessageSquare },
     { id: "activity", label: "Activity", icon: User },
-    { id: "settings", label: "Settings", icon: Share2 },
   ];
 
   if (loading) {
@@ -255,9 +249,7 @@ export default function PortalDetailPage() {
                                 {activeTab === "overview" && <OverviewTab portal={portal} />}
            {activeTab === "updates" && <UpdatesTab portalId={portal.id} />}
            {activeTab === "files" && <FilesTab portalId={portal.id} />}
-           {activeTab === "comments" && <CommentsTab portalId={portal.id} />}
            {activeTab === "activity" && <ActivityTab portalId={portal.id} />}
-           {activeTab === "settings" && <SettingsTab portalId={portal.id} />}
         </div>
       </div>
     </div>

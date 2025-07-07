@@ -15,6 +15,7 @@ const getUpdatesSchema = z.object({
   portalId: z.string().uuid("Invalid portal ID"),
   page: z.string().optional().default("1"),
   limit: z.string().optional().default("10"),
+  search: z.string().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -164,6 +165,7 @@ export async function GET(req: NextRequest) {
       portalId: searchParams.get("portalId") || "",
       page: searchParams.get("page") || "1",
       limit: searchParams.get("limit") || "10",
+      search: searchParams.get("search") || "",
     };
 
     const parsed = getUpdatesSchema.safeParse(queryParams);
@@ -171,7 +173,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 });
     }
 
-    const { portalId, page, limit } = parsed.data;
+    const { portalId, page, limit, search } = parsed.data;
     const pageNum = parseInt(page);
     const limitNum = parseInt(limit);
     const skip = (pageNum - 1) * limitNum;
@@ -191,13 +193,33 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Portal not found or access denied" }, { status: 404 });
     }
 
+    // Build where clause for search
+    const whereClause: any = {
+      portal_id: portalId,
+      parent_update_id: null, // Only root updates
+    };
+
+    if (search) {
+      whereClause.OR = [
+        {
+          title: {
+            contains: search,
+            mode: "insensitive",
+          },
+        },
+        {
+          content: {
+            contains: search,
+            mode: "insensitive",
+          },
+        },
+      ];
+    }
+
     // Fetch updates for this portal (only root updates, not replies)
     const [updates, total] = await Promise.all([
       prisma.update.findMany({
-        where: { 
-          portal_id: portalId,
-          parent_update_id: null, // Only root updates
-        },
+        where: whereClause,
         include: {
           user: {
             select: {
@@ -221,7 +243,7 @@ export async function GET(req: NextRequest) {
         skip,
         take: limitNum,
       }),
-      prisma.update.count({ where: { portal_id: portalId, parent_update_id: null } }),
+      prisma.update.count({ where: whereClause }),
     ]);
 
     return NextResponse.json({

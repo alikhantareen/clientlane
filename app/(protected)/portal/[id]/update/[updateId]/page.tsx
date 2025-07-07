@@ -39,6 +39,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 interface UpdateFile {
   id: string;
@@ -209,6 +210,9 @@ export default function UpdateDetailsPage() {
         );
       }
 
+      // Show success toast
+      toast.success(editingReply ? "Reply updated successfully" : "Reply posted successfully");
+
       // Reset form
       replyEditor?.commands.setContent("");
       setReplyFiles([]);
@@ -266,6 +270,9 @@ export default function UpdateDetailsPage() {
       if (!response.ok) {
         throw new Error("Failed to delete reply");
       }
+
+      // Show success toast
+      toast.success("Reply deleted successfully");
 
       // Refresh the update to show the changes
       await fetchUpdate();
@@ -674,13 +681,16 @@ export default function UpdateDetailsPage() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleEditReply(reply)}>
+                      <DropdownMenuItem
+                        onClick={() => handleEditReply(reply)}
+                        className="cursor-pointer"
+                      >
                         <Edit3 className="w-4 h-4 mr-2 cursor-pointer" />
                         Edit
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={() => openDeleteDialog(reply)}
-                        className="text-red-600 hover:text-red-700"
+                        className="text-red-600 hover:text-red-700 cursor-pointer"
                       >
                         <Trash2 className="w-4 h-4 mr-2 cursor-pointer" />
                         Delete
@@ -868,6 +878,7 @@ export default function UpdateDetailsPage() {
               variant="outline"
               onClick={() => setDeleteDialogOpen(false)}
               disabled={isDeletingReply}
+              className="cursor-pointer"
             >
               Cancel
             </Button>
@@ -875,6 +886,7 @@ export default function UpdateDetailsPage() {
               variant="destructive"
               onClick={handleDeleteReply}
               disabled={isDeletingReply}
+              className="cursor-pointer"
             >
               {isDeletingReply ? (
                 <Loader2 className="w-4 h-4 animate-spin mr-2" />

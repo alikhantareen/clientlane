@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,16 +11,37 @@ import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
 import TextStyle from "@tiptap/extension-text-style";
 import Color from "@tiptap/extension-color";
+import { toast } from "sonner";
 
 interface AddUpdateModalProps {
   isOpen: boolean;
   onClose: () => void;
   portalId: string;
+  editUpdate?: {
+    id: string;
+    title: string;
+    content: string;
+    files: Array<{
+      id: string;
+      file_name: string;
+      file_url: string;
+      file_type: string;
+      file_size: number;
+    }>;
+  };
 }
 
-export function AddUpdateModal({ isOpen, onClose, portalId }: AddUpdateModalProps) {
+export function AddUpdateModal({ isOpen, onClose, portalId, editUpdate }: AddUpdateModalProps) {
   const [title, setTitle] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+  const [existingFiles, setExistingFiles] = useState<Array<{
+    id: string;
+    file_name: string;
+    file_url: string;
+    file_type: string;
+    file_size: number;
+  }>>([]);
+  const [filesToRemove, setFilesToRemove] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -41,7 +62,7 @@ export function AddUpdateModal({ isOpen, onClose, portalId }: AddUpdateModalProp
       TextStyle,
       Color,
     ],
-    content: "",
+    content: editUpdate?.content || "",
     editorProps: {
       attributes: {
         class: "prose prose-sm max-w-none focus:outline-none min-h-[200px] p-4 text-gray-700",
@@ -50,6 +71,21 @@ export function AddUpdateModal({ isOpen, onClose, portalId }: AddUpdateModalProp
     },
   });
 
+  // Set initial values when editing
+  useEffect(() => {
+    if (editUpdate) {
+      setTitle(editUpdate.title);
+      setExistingFiles(editUpdate.files);
+      editor?.commands.setContent(editUpdate.content);
+    } else {
+      setTitle("");
+      setExistingFiles([]);
+      editor?.commands.setContent("");
+    }
+    setFiles([]);
+    setFilesToRemove([]);
+  }, [editUpdate, editor]);
+
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(event.target.files || []);
     setFiles(prev => [...prev, ...selectedFiles]);
@@ -57,6 +93,11 @@ export function AddUpdateModal({ isOpen, onClose, portalId }: AddUpdateModalProp
 
   const removeFile = (index: number) => {
     setFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const removeExistingFile = (fileId: string) => {
+    setFilesToRemove(prev => [...prev, fileId]);
+    setExistingFiles(prev => prev.filter(file => file.id !== fileId));
   };
 
   const handleSubmit = async () => {
@@ -71,34 +112,51 @@ export function AddUpdateModal({ isOpen, onClose, portalId }: AddUpdateModalProp
       const formData = new FormData();
       formData.append("title", title);
       formData.append("content", content);
-      formData.append("portalId", portalId);
       
-      // Add files to form data
+      if (editUpdate) {
+        // For editing, include files to remove
+        if (filesToRemove.length > 0) {
+          formData.append("filesToRemove", JSON.stringify(filesToRemove));
+        }
+      } else {
+        // For creating, include portal ID
+        formData.append("portalId", portalId);
+      }
+      
+      // Add new files to form data
       files.forEach((file) => {
         formData.append("files", file);
       });
 
-      // Make API call to create update
-      const response = await fetch("/api/updates", {
-        method: "POST",
-        body: formData,
-      });
+      // Make API call
+      const response = await fetch(
+        editUpdate ? `/api/updates/${editUpdate.id}` : "/api/updates",
+        {
+          method: editUpdate ? "PUT" : "POST",
+          body: formData,
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to create update");
+        throw new Error(errorData.error || "Failed to save update");
       }
 
       const data = await response.json();
-      console.log("Update created successfully:", data);
+      console.log("Update saved successfully:", data);
+      
+      // Show success toast
+      toast.success(editUpdate ? "Update edited successfully" : "Update created successfully");
       
       // Reset form and close modal
       setTitle("");
-      editor?.commands.setContent("");
       setFiles([]);
+      setExistingFiles([]);
+      setFilesToRemove([]);
+      editor?.commands.setContent("");
       onClose();
     } catch (error) {
-      console.error("Error creating update:", error);
+      console.error("Error saving update:", error);
       // You might want to show an error message to the user here
     } finally {
       setIsLoading(false);
@@ -107,8 +165,10 @@ export function AddUpdateModal({ isOpen, onClose, portalId }: AddUpdateModalProp
 
   const handleCancel = () => {
     setTitle("");
-    editor?.commands.setContent("");
     setFiles([]);
+    setExistingFiles([]);
+    setFilesToRemove([]);
+    editor?.commands.setContent("");
     onClose();
   };
 
@@ -182,7 +242,9 @@ export function AddUpdateModal({ isOpen, onClose, portalId }: AddUpdateModalProp
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <DialogHeader className="space-y-0">
-          <DialogTitle className="text-2xl font-bold">New Update</DialogTitle>
+          <DialogTitle className="text-2xl font-bold">
+            {editUpdate ? "Edit Update" : "New Update"}
+          </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6 mt-6">
@@ -248,10 +310,38 @@ export function AddUpdateModal({ isOpen, onClose, portalId }: AddUpdateModalProp
               Choose Files
             </Button>
 
-            {/* Selected Files List */}
+            {/* Existing Files (when editing) */}
+            {existingFiles.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-sm text-gray-600">Current files:</p>
+                <div className="space-y-1">
+                  {existingFiles.map((file) => (
+                    <div
+                      key={file.id}
+                      className="flex items-center justify-between bg-blue-50 p-2 rounded-lg"
+                    >
+                      <span className="text-sm text-gray-700 truncate flex-1">
+                        {file.file_name}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeExistingFile(file.id)}
+                        className="text-gray-500 hover:text-red-500 ml-2"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* New Files to Upload */}
             {files.length > 0 && (
               <div className="space-y-2">
-                <p className="text-sm text-gray-600">Selected files:</p>
+                <p className="text-sm text-gray-600">New files to upload:</p>
                 <div className="space-y-1">
                   {files.map((file, index) => (
                     <div
@@ -294,7 +384,7 @@ export function AddUpdateModal({ isOpen, onClose, portalId }: AddUpdateModalProp
               disabled={isLoading || !title.trim() || !editor?.getHTML().trim()}
               className="bg-black text-white hover:bg-gray-800 cursor-pointer"
             >
-              {isLoading ? "Posting..." : "Post"}
+              {isLoading ? (editUpdate ? "Updating..." : "Posting...") : (editUpdate ? "Update" : "Post")}
             </Button>
           </div>
         </div>

@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { useRef } from "react";
-import { CalendarIcon, Search, Filter, ChevronDown, User } from "lucide-react";
+import { CalendarIcon, Search, Filter, ChevronDown, User, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import type { DateRange } from "react-day-picker";
 import { StatusMultiSelect } from "@/components/ui/StatusMultiSelect";
@@ -279,14 +279,22 @@ export default function AllPortalsPage() {
               ))}
         </div>
         {hasMore && (
-          <div className="flex justify-center mt-8">
-            <button
+          <div className="flex justify-center py-4">
+            <Button
               onClick={handleLoadMore}
-              className="px-6 py-2 rounded-md bg-black text-white font-medium hover:bg-gray-800 disabled:opacity-50"
               disabled={loading}
+              variant="outline"
+              className="flex items-center gap-2 cursor-pointer"
             >
-              {loading ? "Loading..." : "Load More"}
-            </button>
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Loading...
+                </>
+              ) : (
+                <>Load More Portals</>
+              )}
+            </Button>
           </div>
         )}
       </section>
