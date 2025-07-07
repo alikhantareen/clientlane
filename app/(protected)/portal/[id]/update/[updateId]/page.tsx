@@ -2,7 +2,21 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Send, Paperclip, Loader2, Download, Bold, Italic, List, ListOrdered, Link as LinkIcon } from "lucide-react";
+import {
+  ArrowLeft,
+  Send,
+  Paperclip,
+  Loader2,
+  Download,
+  Bold,
+  Italic,
+  List,
+  ListOrdered,
+  Link as LinkIcon,
+  MoreVertical,
+  Edit3,
+  Trash2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
 import { useEditor, EditorContent } from "@tiptap/react";
@@ -10,6 +24,21 @@ import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
 import TextStyle from "@tiptap/extension-text-style";
 import Color from "@tiptap/extension-color";
+import { useUser } from "@/lib/contexts/UserContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface UpdateFile {
   id: string;
@@ -57,12 +86,20 @@ export default function UpdateDetailsPage() {
   const router = useRouter();
   const portalId = params?.id as string;
   const updateId = params?.updateId as string;
+  const { user } = useUser();
 
   const [update, setUpdate] = useState<UpdateDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [replyFiles, setReplyFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Edit and delete state
+  const [editingReply, setEditingReply] = useState<Reply | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [replyToDelete, setReplyToDelete] = useState<Reply | null>(null);
+  const [isDeletingReply, setIsDeletingReply] = useState(false);
+  const [filesToRemove, setFilesToRemove] = useState<string[]>([]); // Track files to remove by ID
 
   // Tiptap editor configuration for replies
   const replyEditor = useEditor({
@@ -73,9 +110,9 @@ export default function UpdateDetailsPage() {
         autolink: true,
         linkOnPaste: true,
         HTMLAttributes: {
-          rel: 'noopener noreferrer',
-          target: '_blank',
-          class: 'text-blue-600 underline',
+          rel: "noopener noreferrer",
+          target: "_blank",
+          class: "text-blue-600 underline",
         },
       }),
       TextStyle,
@@ -84,7 +121,8 @@ export default function UpdateDetailsPage() {
     content: "",
     editorProps: {
       attributes: {
-        class: "prose prose-sm max-w-none focus:outline-none min-h-[60px] p-3 text-gray-700",
+        class:
+          "prose prose-sm max-w-none focus:outline-none min-h-[60px] p-3 text-gray-700",
       },
     },
   });
@@ -93,12 +131,12 @@ export default function UpdateDetailsPage() {
     try {
       setLoading(true);
       setError(null);
-      
+
       const response = await fetch(`/api/updates/${updateId}`);
       if (!response.ok) {
         throw new Error("Failed to fetch update");
       }
-      
+
       const data = await response.json();
       setUpdate(data.update);
     } catch (err) {
@@ -119,70 +157,157 @@ export default function UpdateDetailsPage() {
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
-    setReplyFiles(prev => [...prev, ...files]);
+    setReplyFiles((prev) => [...prev, ...files]);
   };
 
   const removeFile = (index: number) => {
-    setReplyFiles(prev => prev.filter((_, i) => i !== index));
+    setReplyFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmitReply = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const content = replyEditor?.getHTML() || "";
     if (!content.trim()) {
       return;
     }
 
     setIsSubmitting(true);
-    
+
     try {
       const formData = new FormData();
       formData.append("content", content);
-      
+
       // Add files to form data
-      replyFiles.forEach(file => {
+      replyFiles.forEach((file) => {
         formData.append("files", file);
       });
 
-      const response = await fetch(`/api/updates/${updateId}`, {
-        method: "POST",
-        body: formData,
-      });
+      let response;
+      if (editingReply) {
+        // Add files to remove to form data
+        if (filesToRemove.length > 0) {
+          formData.append("filesToRemove", JSON.stringify(filesToRemove));
+        }
+
+        // Update existing reply
+        response = await fetch(`/api/replies/${editingReply.id}`, {
+          method: "PUT",
+          body: formData,
+        });
+      } else {
+        // Create new reply
+        response = await fetch(`/api/updates/${updateId}`, {
+          method: "POST",
+          body: formData,
+        });
+      }
 
       if (!response.ok) {
-        throw new Error("Failed to post reply");
+        throw new Error(
+          editingReply ? "Failed to update reply" : "Failed to post reply"
+        );
       }
 
       // Reset form
       replyEditor?.commands.setContent("");
       setReplyFiles([]);
-      
-      // Refresh the update to show the new reply
+      setEditingReply(null);
+      setFilesToRemove([]);
+
+      // Refresh the update to show the changes
       await fetchUpdate();
-      
     } catch (err) {
-      console.error("Error posting reply:", err);
-      setError(err instanceof Error ? err.message : "Failed to post reply");
+      console.error("Error submitting reply:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : editingReply
+            ? "Failed to update reply"
+            : "Failed to post reply"
+      );
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const handleEditReply = (reply: Reply) => {
+    setEditingReply(reply);
+    replyEditor?.commands.setContent(reply.content);
+    setReplyFiles([]); // Clear files, we'll show existing files separately
+    setFilesToRemove([]); // Reset files to remove
+  };
+
+  const handleCancelEdit = () => {
+    setEditingReply(null);
+    replyEditor?.commands.setContent("");
+    setReplyFiles([]);
+    setFilesToRemove([]);
+  };
+
+  const handleRemoveExistingFile = (fileId: string) => {
+    setFilesToRemove((prev) => [...prev, fileId]);
+  };
+
+  const handleRestoreExistingFile = (fileId: string) => {
+    setFilesToRemove((prev) => prev.filter((id) => id !== fileId));
+  };
+
+  const handleDeleteReply = async () => {
+    if (!replyToDelete) return;
+
+    setIsDeletingReply(true);
+
+    try {
+      const response = await fetch(`/api/replies/${replyToDelete.id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete reply");
+      }
+
+      // Refresh the update to show the changes
+      await fetchUpdate();
+
+      // Close the dialog
+      setDeleteDialogOpen(false);
+      setReplyToDelete(null);
+    } catch (err) {
+      console.error("Error deleting reply:", err);
+      setError(err instanceof Error ? err.message : "Failed to delete reply");
+    } finally {
+      setIsDeletingReply(false);
+    }
+  };
+
+  const openDeleteDialog = (reply: Reply) => {
+    setReplyToDelete(reply);
+    setDeleteDialogOpen(true);
+  };
+
   const getUserInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase();
   };
 
   const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
   // Toolbar component for the reply editor
-  const ReplyEditorToolbar = ({ editor }: { editor: ReturnType<typeof useEditor> | null }) => {
+  const ReplyEditorToolbar = ({
+    editor,
+  }: {
+    editor: ReturnType<typeof useEditor> | null;
+  }) => {
     if (!editor) return null;
 
     return (
@@ -191,7 +316,10 @@ export default function UpdateDetailsPage() {
           type="button"
           variant="ghost"
           size="sm"
-          onMouseDown={e => { e.preventDefault(); editor.chain().focus().toggleBold().run(); }}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            editor.chain().focus().toggleBold().run();
+          }}
           className={editor.isActive("bold") ? "bg-gray-200" : ""}
         >
           <Bold className="w-4 h-4" />
@@ -200,7 +328,10 @@ export default function UpdateDetailsPage() {
           type="button"
           variant="ghost"
           size="sm"
-          onMouseDown={e => { e.preventDefault(); editor.chain().focus().toggleItalic().run(); }}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            editor.chain().focus().toggleItalic().run();
+          }}
           className={editor.isActive("italic") ? "bg-gray-200" : ""}
         >
           <Italic className="w-4 h-4" />
@@ -209,7 +340,10 @@ export default function UpdateDetailsPage() {
           type="button"
           variant="ghost"
           size="sm"
-          onMouseDown={e => { e.preventDefault(); editor.chain().focus().toggleBulletList().run(); }}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            editor.chain().focus().toggleBulletList().run();
+          }}
           className={editor.isActive("bulletList") ? "bg-gray-200" : ""}
         >
           <List className="w-4 h-4" />
@@ -218,7 +352,10 @@ export default function UpdateDetailsPage() {
           type="button"
           variant="ghost"
           size="sm"
-          onMouseDown={e => { e.preventDefault(); editor.chain().focus().toggleOrderedList().run(); }}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            editor.chain().focus().toggleOrderedList().run();
+          }}
           className={editor.isActive("orderedList") ? "bg-gray-200" : ""}
         >
           <ListOrdered className="w-4 h-4" />
@@ -227,12 +364,12 @@ export default function UpdateDetailsPage() {
           type="button"
           variant="ghost"
           size="sm"
-          onMouseDown={e => {
+          onMouseDown={(e) => {
             e.preventDefault();
-            if (editor.isActive('link')) {
+            if (editor.isActive("link")) {
               editor.chain().focus().unsetLink().run();
             } else {
-              const previousUrl = editor.getAttributes('link').href || '';
+              const previousUrl = editor.getAttributes("link").href || "";
               const url = window.prompt("Enter URL:", previousUrl);
               if (url && url !== previousUrl) {
                 editor.chain().focus().setLink({ href: url }).run();
@@ -368,11 +505,17 @@ export default function UpdateDetailsPage() {
 
       {/* Update Title */}
       <div className="bg-white rounded-lg shadow-sm border p-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">{update.title}</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">
+          {update.title}
+        </h1>
         <div className="flex items-center gap-3 text-sm text-gray-500">
           <span>by {update.user.name}</span>
           <span>•</span>
-          <span>{formatDistanceToNow(new Date(update.created_at), { addSuffix: true })}</span>
+          <span>
+            {formatDistanceToNow(new Date(update.created_at), {
+              addSuffix: true,
+            })}
+          </span>
         </div>
       </div>
 
@@ -395,21 +538,30 @@ export default function UpdateDetailsPage() {
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-3">
-                <span className="font-medium text-gray-900">{update.user.name}</span>
+                <span className="font-medium text-gray-900">
+                  {update.user.name}
+                </span>
                 <span className="text-sm text-gray-500">
-                  {formatDistanceToNow(new Date(update.created_at), { addSuffix: true })}
+                  {formatDistanceToNow(new Date(update.created_at), {
+                    addSuffix: true,
+                  })}
                 </span>
               </div>
-                                 <div className="prose prose-sm max-w-none [&_p]:mb-3 [&_strong]:font-bold [&_em]:italic [&_ul]:list-disc [&_ol]:list-decimal [&_li]:ml-6 [&_a]:text-blue-600 [&_a]:underline">
-                     <div dangerouslySetInnerHTML={{ __html: update.content }} />
-                   </div>
+              <div className="prose prose-sm max-w-none [&_p]:mb-3 [&_strong]:font-bold [&_em]:italic [&_ul]:list-disc [&_ol]:list-decimal [&_li]:ml-6 [&_a]:text-blue-600 [&_a]:underline">
+                <div dangerouslySetInnerHTML={{ __html: update.content }} />
+              </div>
               {/* Files */}
               {update.files.length > 0 && (
                 <div className="mt-4 space-y-2">
-                  <p className="text-sm font-medium text-gray-600">Attachments:</p>
+                  <p className="text-sm font-medium text-gray-600">
+                    Attachments:
+                  </p>
                   <div className="space-y-2">
                     {update.files.map((file) => (
-                      <div key={file.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded">
+                      <div
+                        key={file.id}
+                        className="flex items-center gap-2 p-2 bg-gray-50 rounded"
+                      >
                         <Paperclip className="w-4 h-4 text-gray-500" />
                         <a
                           href={file.file_url}
@@ -460,21 +612,30 @@ export default function UpdateDetailsPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="font-medium text-gray-900">{reply.user.name}</span>
+                    <span className="font-medium text-gray-900">
+                      {reply.user.name}
+                    </span>
                     <span className="text-sm text-gray-500">
-                      {formatDistanceToNow(new Date(reply.created_at), { addSuffix: true })}
+                      {formatDistanceToNow(new Date(reply.created_at), {
+                        addSuffix: true,
+                      })}
                     </span>
                   </div>
-                                     <div className="prose prose-sm max-w-none [&_p]:mb-3 [&_strong]:font-bold [&_em]:italic [&_ul]:list-disc [&_ol]:list-decimal [&_li]:ml-6 [&_a]:text-blue-600 [&_a]:underline">
-                     <div dangerouslySetInnerHTML={{ __html: reply.content }} />
-                   </div>
+                  <div className="prose prose-sm max-w-none [&_p]:mb-3 [&_strong]:font-bold [&_em]:italic [&_ul]:list-disc [&_ol]:list-decimal [&_li]:ml-6 [&_a]:text-blue-600 [&_a]:underline">
+                    <div dangerouslySetInnerHTML={{ __html: reply.content }} />
+                  </div>
                   {/* Reply Files */}
                   {reply.files.length > 0 && (
                     <div className="mt-3 space-y-2">
-                      <p className="text-sm font-medium text-gray-600">Attachments:</p>
+                      <p className="text-sm font-medium text-gray-600">
+                        Attachments:
+                      </p>
                       <div className="space-y-1">
                         {reply.files.map((file) => (
-                          <div key={file.id} className="flex items-center gap-2 p-2 bg-white rounded">
+                          <div
+                            key={file.id}
+                            className="flex items-center gap-2 p-2 bg-white rounded"
+                          >
                             <Paperclip className="w-4 h-4 text-gray-500" />
                             <a
                               href={file.file_url}
@@ -500,6 +661,33 @@ export default function UpdateDetailsPage() {
                     </div>
                   )}
                 </div>
+                {/* Three-dot menu - only show for reply author */}
+                {user && user.id === reply.user.id && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-8 h-8 p-0 text-gray-500 hover:text-gray-700 cursor-pointer"
+                      >
+                        <MoreVertical className="w-4 h-4 cursor-pointer" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleEditReply(reply)}>
+                        <Edit3 className="w-4 h-4 mr-2 cursor-pointer" />
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => openDeleteDialog(reply)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2 cursor-pointer" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
               </div>
             </div>
           </div>
@@ -509,16 +697,89 @@ export default function UpdateDetailsPage() {
       {/* Reply Input Box - Fixed to bottom */}
       <div className="fixed -bottom-6 left-0 right-0 bg-white border-t z-50 lg:left-64">
         <div className="max-w-4xl mx-auto px-6 py-4">
+          {/* Edit mode indicator */}
+          {editingReply && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-blue-800">
+                  Editing reply by {editingReply.user.name}
+                </span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCancelEdit}
+                  className="text-blue-700 hover:text-blue-800 cursor-pointer"
+                >
+                  Cancel
+                </Button>
+              </div>
+              {/* Show existing files from the reply being edited */}
+              {editingReply.files.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  <p className="text-xs text-blue-700">Existing attachments:</p>
+                  {editingReply.files.map((file) => {
+                    const isMarkedForRemoval = filesToRemove.includes(file.id);
+                    return (
+                      <div
+                        key={file.id}
+                        className={`flex items-center gap-2 p-2 rounded ${
+                          isMarkedForRemoval
+                            ? "bg-red-50 border border-red-200 text-red-600"
+                            : "bg-white border border-blue-200 text-blue-600"
+                        }`}
+                      >
+                        <Paperclip className="w-3 h-3" />
+                        <span
+                          className={`flex-1 text-xs ${isMarkedForRemoval ? "line-through" : ""}`}
+                        >
+                          {file.file_name}
+                        </span>
+                        <span className="text-xs opacity-75">
+                          ({formatFileSize(file.file_size)})
+                        </span>
+                        {isMarkedForRemoval ? (
+                          <button
+                            type="button"
+                            onClick={() => handleRestoreExistingFile(file.id)}
+                            className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                          >
+                            Restore
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveExistingFile(file.id)}
+                            className="text-xs text-red-600 hover:text-red-800 font-medium"
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
           <form onSubmit={handleSubmitReply} className="space-y-3">
             {/* Selected Files */}
             {replyFiles.length > 0 && (
               <div className="space-y-2">
-                <p className="text-sm font-medium text-gray-600">Selected files:</p>
+                <p className="text-sm font-medium text-gray-600">
+                  {editingReply ? "Additional files:" : "Selected files:"}
+                </p>
                 <div className="space-y-1">
                   {replyFiles.map((file, index) => (
-                    <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 rounded">
+                    <div
+                      key={index}
+                      className="flex items-center gap-2 p-2 bg-gray-50 rounded"
+                    >
                       <Paperclip className="w-4 h-4 text-gray-500" />
-                      <span className="text-sm text-gray-700 flex-1">{file.name}</span>
+                      <span className="text-sm text-gray-700 flex-1">
+                        {file.name}
+                      </span>
                       <span className="text-xs text-gray-500">
                         {formatFileSize(file.size)}
                       </span>
@@ -534,7 +795,7 @@ export default function UpdateDetailsPage() {
                 </div>
               </div>
             )}
-            
+
             {/* Reply Input */}
             <div className="flex gap-3">
               <div className="flex-1 border rounded-lg overflow-hidden bg-white">
@@ -547,7 +808,9 @@ export default function UpdateDetailsPage() {
                   {/* Placeholder when editor is empty */}
                   {replyEditor && replyEditor.isEmpty && (
                     <div className="absolute top-3 left-3 text-gray-400 pointer-events-none">
-                      Write your reply...
+                      {editingReply
+                        ? "Edit your reply..."
+                        : "Write your reply..."}
                     </div>
                   )}
                 </div>
@@ -570,7 +833,7 @@ export default function UpdateDetailsPage() {
                 <Button
                   type="submit"
                   disabled={!replyEditor?.getHTML().trim() || isSubmitting}
-                  className="bg-black text-white hover:bg-gray-800 px-4 py-2 rounded-lg flex items-center gap-2"
+                  className={`px-4 py-2 rounded-lg flex items-center gap-2 bg-black text-white hover:bg-gray-800 cursor-pointer`}
                 >
                   {isSubmitting ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -584,8 +847,48 @@ export default function UpdateDetailsPage() {
         </div>
       </div>
 
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Reply</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this reply? This action cannot be
+              undone.
+              {replyToDelete?.files && replyToDelete.files.length > 0 && (
+                <span className="block mt-2 text-sm">
+                  This will also delete {replyToDelete?.files?.length} attached
+                  file(s).
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={isDeletingReply}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteReply}
+              disabled={isDeletingReply}
+            >
+              {isDeletingReply ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : (
+                <Trash2 className="w-4 h-4 mr-2" />
+              )}
+              Delete Reply
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Bottom padding to account for fixed reply input */}
       <div className="h-32"></div>
     </div>
   );
-} 
+}

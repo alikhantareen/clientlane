@@ -175,11 +175,6 @@ export function UpdatesTab({ portalId }: UpdatesTabProps) {
                       <span className="text-sm text-gray-500">
                         {formatDistanceToNow(new Date(update.created_at), { addSuffix: true })}
                       </span>
-                      {update.files.length > 0 && (
-                        <span className="text-sm text-gray-500 ml-auto">
-                          {update.files.length} file{update.files.length > 1 ? 's' : ''}
-                        </span>
-                      )}
                     </div>
                     <div className="space-y-2">
                       <p className="text-gray-900 text-sm font-medium">
@@ -189,30 +184,6 @@ export function UpdatesTab({ portalId }: UpdatesTabProps) {
                         <MessageCircle className="w-4 h-4 text-gray-500" />
                         <span className="text-sm text-gray-500">Click to view details and replies</span>
                       </div>
-                      {/* Files List */}
-                      {update.files.length > 0 && (
-                        <div className="mt-3 space-y-2">
-                          <p className="text-sm font-medium text-gray-600">Attached files:</p>
-                          <div className="space-y-1">
-                            {update.files.map((file) => (
-                              <div key={file.id} className="flex items-center gap-2">
-                                <a
-                                  href={file.file_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-sm text-blue-600 hover:text-blue-800 underline"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  {file.file_name}
-                                </a>
-                                <span className="text-xs text-gray-500">
-                                  ({Math.round(file.file_size / 1024)}KB)
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
                     </div>
                   </div>
                 </div>
