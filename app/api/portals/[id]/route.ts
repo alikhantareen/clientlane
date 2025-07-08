@@ -27,7 +27,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Verify user exists and is a freelancer
+    // Verify user exists
     const user = await prisma.user.findUnique({
       where: { id: token.sub },
       select: { id: true, role: true }
@@ -37,20 +37,35 @@ export async function GET(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    if (user.role !== "freelancer") {
-      return NextResponse.json({ error: "Only freelancers can view portals" }, { status: 403 });
+    if (user.role !== "freelancer" && user.role !== "client") {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
     const { id: portalId } = await params;
 
-    // Find portal and ensure it belongs to the current user
+    // Find portal and ensure user has access to it
+    const where: any = { id: portalId };
+    
+    if (user.role === "freelancer") {
+      // Freelancers can view portals they created
+      where.created_by = user.id;
+    } else if (user.role === "client") {
+      // Clients can view portals they are assigned to
+      where.client_id = user.id;
+    }
+    
     const portal = await prisma.portal.findFirst({
-      where: {
-        id: portalId,
-        created_by: user.id, // Only show portals created by the current user
-      },
+      where,
       include: {
         client: { 
+          select: { 
+            id: true, 
+            name: true, 
+            email: true, 
+            image: true 
+          } 
+        },
+        freelancer: { 
           select: { 
             id: true, 
             name: true, 
@@ -101,14 +116,17 @@ export async function GET(
       status: portal.status,
       thumbnail_url: portal.thumbnail_url,
       client: portal.client,
+      freelancer: portal.freelancer,
       comments: portal.comments,
       updates: portal.updates,
       shared_links: portal.shared_links,
       created_at: portal.created_at,
       updated_at: portal.updated_at,
       commentsCount: portal.comments.length,
-      // Generate portal initials from name
-      initials: portal.name.split(' ').map(word => word[0]).join('').toUpperCase() || 'P',
+      // Generate initials based on user role - client initials for freelancers, freelancer initials for clients
+      initials: user.role === "freelancer" 
+        ? portal.client.name.split(' ').map(word => word[0]).join('').toUpperCase() || 'C'
+        : portal.freelancer.name.split(' ').map(word => word[0]).join('').toUpperCase() || 'F',
     };
 
     return NextResponse.json({ portal: portalData });
@@ -333,6 +351,7 @@ export async function DELETE(
         client: {
           select: {
             id: true,
+            role: true,
           },
         },
       },
@@ -342,13 +361,19 @@ export async function DELETE(
       return NextResponse.json({ error: "Portal not found" }, { status: 404 });
     }
 
+    // Check if client has other portals (excluding the one being deleted)
+    const clientOtherPortals = await prisma.portal.findMany({
+      where: {
+        client_id: portal.client.id,
+        id: { not: portalId }, // Exclude current portal
+      },
+      select: { id: true },
+    });
+
+    const clientHasOtherPortals = clientOtherPortals.length > 0;
+
     // Use a transaction to delete everything atomically
     await prisma.$transaction(async (tx) => {
-      // Set client status to inactive
-      await tx.user.update({
-        where: { id: portal.client.id },
-        data: { is_active: false },
-      });
       // Delete all related data in the correct order (respecting foreign key constraints)
       
       // Delete activities first
@@ -389,10 +414,73 @@ export async function DELETE(
         where: { portal_id: portalId },
       });
 
+      // Delete portal tags
+      await tx.portalTag.deleteMany({
+        where: { portal_id: portalId },
+      });
+
+      // Delete notifications related to this portal
+      await tx.notification.deleteMany({
+        where: { portal_id: portalId },
+      });
+
       // Finally, delete the portal
       await tx.portal.delete({
         where: { id: portalId },
       });
+
+      // Handle client deletion/deactivation based on whether they have other portals
+      if (!clientHasOtherPortals && portal.client.role === "client") {
+        // Client has no other portals, so clean them up
+        
+        // Option 1: Soft delete - mark as inactive (recommended for data retention)
+        await tx.user.update({
+          where: { id: portal.client.id },
+          data: { is_active: false },
+        });
+
+        // Option 2: Hard delete - uncomment below if you prefer complete removal
+        // Note: This will cascade delete their comments, activities, etc. on other portals if any exist
+        /*
+        // Delete client's remaining data that's not portal-specific
+        await tx.comment.deleteMany({
+          where: { user_id: portal.client.id },
+        });
+        
+        await tx.activity.deleteMany({
+          where: { user_id: portal.client.id },
+        });
+        
+        await tx.notification.deleteMany({
+          where: { user_id: portal.client.id },
+        });
+        
+        await tx.file.updateMany({
+          where: { user_id: portal.client.id },
+          data: { user_id: null }, // Set to null instead of deleting to preserve file records
+        });
+        
+        await tx.update.deleteMany({
+          where: { user_id: portal.client.id },
+        });
+        
+        await tx.subscription.deleteMany({
+          where: { user_id: portal.client.id },
+        });
+
+        // Finally delete the client user
+        await tx.user.delete({
+          where: { id: portal.client.id },
+        });
+        */
+      } else if (clientHasOtherPortals) {
+        // Client has other portals, ensure they remain active
+        await tx.user.update({
+          where: { id: portal.client.id },
+          data: { is_active: true },
+        });
+      }
+      // If client is not a "client" role, we don't modify their status
     });
 
     // Delete physical files from disk
@@ -421,7 +509,12 @@ export async function DELETE(
       }
     }
 
-    return NextResponse.json({ message: "Portal deleted successfully" });
+    // Return appropriate message based on what was deleted
+    const message = !clientHasOtherPortals && portal.client.role === "client" 
+      ? "Portal deleted successfully. Client has been deactivated as they have no other portals." 
+      : "Portal deleted successfully.";
+
+    return NextResponse.json({ message });
 
   } catch (err) {
     console.error("Portal deletion error:", err);

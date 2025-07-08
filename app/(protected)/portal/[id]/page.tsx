@@ -21,6 +21,7 @@ import {
   DeletePortalModal,
 } from "@/components/portal";
 import { toast } from "sonner";
+import { useSession } from "next-auth/react";
 
 interface PortalData {
   id: string;
@@ -29,6 +30,12 @@ interface PortalData {
   status: string;
   thumbnail_url: string;
   client: {
+    id: string;
+    name: string;
+    email: string;
+    image: string | null;
+  };
+  freelancer: {
     id: string;
     name: string;
     email: string;
@@ -51,6 +58,8 @@ export default function PortalDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const { data: session } = useSession();
+  const user = session?.user as any;
 
   const id = params?.id as string;
 
@@ -224,9 +233,15 @@ export default function PortalDetailPage() {
                     Updated {new Date(portal.updated_at).toLocaleDateString()}
                   </span>
                 </div>
-                <p className="text-gray-600 mb-3 break-words">
-                  Client: {portal.client.name}
-                </p>
+                {user?.role === "freelancer" ? (
+                  <p className="text-gray-600 mb-3 break-words">
+                    Client: {portal.client.name}
+                  </p>
+                ) : (
+                  <p className="text-gray-600 mb-3 break-words">
+                    Freelancer: {portal.freelancer.name}
+                  </p>
+                )}
                 {portal.description && (
                   <p className="text-gray-700 text-sm leading-relaxed break-words">
                     {portal.description}
@@ -243,7 +258,10 @@ export default function PortalDetailPage() {
                     </span>
                   </div>
                   <span className="text-xs text-gray-500 mt-1 text-center">
-                    {portal.client.name.split(" ")[0]}
+                    {user?.role === "freelancer" 
+                      ? portal.client.name.split(" ")[0]
+                      : portal.freelancer.name.split(" ")[0]
+                    }
                   </span>
                 </div>
               </div>

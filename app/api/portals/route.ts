@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Verify user exists and is a freelancer
+    // Verify user exists
     const user = await prisma.user.findUnique({
       where: { id: token.sub },
       select: { id: true, role: true }
@@ -21,8 +21,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    if (user.role !== "freelancer") {
-      return NextResponse.json({ error: "Only freelancers can view portals" }, { status: 403 });
+    if (user.role !== "freelancer" && user.role !== "client") {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
     const { searchParams } = new URL(req.url);
@@ -41,10 +41,16 @@ export async function GET(req: NextRequest) {
       status = statusParam.split(",").map((s) => s.trim()).filter(Boolean);
     }
 
-    // Build where clause - CRITICAL: Filter by current user's created portals
-    const where: any = {
-      created_by: user.id, // Only show portals created by the current user
-    };
+    // Build where clause - Filter by user role
+    const where: any = {};
+    
+    if (user.role === "freelancer") {
+      // Freelancers see portals they created
+      where.created_by = user.id;
+    } else if (user.role === "client") {
+      // Clients see portals they are assigned to
+      where.client_id = user.id;
+    }
     if (status) {
       if (Array.isArray(status)) {
         where.status = { in: status };
@@ -84,7 +90,11 @@ export async function GET(req: NextRequest) {
         where,
         include: {
           client: { select: { name: true, email: true } },
-          comments: { select: { id: true } },
+          freelancer: { select: { name: true, email: true } },
+          updates: { 
+            select: { id: true },
+            where: { parent_update_id: null } // Only count root updates, not replies
+          },
         },
       }),
       prisma.portal.count({ where }),
@@ -98,8 +108,9 @@ export async function GET(req: NextRequest) {
       status: portal.status,
       thumbnail_url: portal.thumbnail_url,
       clientName: portal.client?.name || "",
+      freelancerName: portal.freelancer?.name || "",
       updated_at: portal.updated_at,
-      commentsCount: portal.comments.length,
+      updatesCount: portal.updates.length,
     }));
 
     return NextResponse.json({ portals: data, total });

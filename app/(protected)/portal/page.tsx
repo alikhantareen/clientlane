@@ -13,13 +13,16 @@ import {
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { useRef } from "react";
-import { CalendarIcon, Search, Filter, ChevronDown, User, Loader2 } from "lucide-react";
+import { CalendarIcon, Search, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import type { DateRange } from "react-day-picker";
 import { StatusMultiSelect } from "@/components/ui/StatusMultiSelect";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 
 export default function AllPortalsPage() {
+  const { data: session } = useSession();
+  const user = session?.user as any;
   const router = useRouter();
   const [portals, setPortals] = useState<any[]>([]);
   const [page, setPage] = useState(1);
@@ -150,13 +153,17 @@ export default function AllPortalsPage() {
             Manage and view all your projects in one place
           </p>
         </div>
-        <Link
-          href="/portal/create"
-          className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-black text-white hover:bg-gray-800 hover:text-white cursor-pointer w-full md:w-fit px-4 py-2 gap-2"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Create Portal
-        </Link>
+        {
+          user?.role === "freelancer" && (
+            <Link
+              href="/portal/create"
+              className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-black text-white hover:bg-gray-800 hover:text-white cursor-pointer w-full md:w-fit px-4 py-2 gap-2"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Create Portal
+            </Link>
+          )
+        }
       </section>
       <hr className="mt-8 mb-8" />
 
@@ -257,7 +264,11 @@ export default function AllPortalsPage() {
                 <PortalCard
                   key={portal.id}
                   cardImage={portal.thumbnail_url || DefaultPortalImage}
-                  initials={portal.clientName?.charAt(0) || "CL"}
+                  initials={
+                    user?.role === "freelancer"
+                      ? portal.clientName?.charAt(0) || "C"
+                      : portal.freelancerName?.charAt(0) || "F"
+                  }
                   title={portal.name}
                   status={
                     portal.status.charAt(0).toUpperCase() +
@@ -271,8 +282,9 @@ export default function AllPortalsPage() {
                         : "#9E9E9E"
                   }
                   clientName={`Client: ${portal.clientName}`}
+                  freelancerName={`Freelancer: ${portal.freelancerName}`}
                   lastUpdated={`Last Updated: ${new Date(portal.updated_at).toLocaleDateString()}`}
-                  newComments={`${portal.commentsCount} New Comments`}
+                  newUpdates={`${portal.updatesCount} New Updates`}
                   onShareLink={() => {}}
                   onView={() => router.push(`/portal/${portal.id}`)}
                 />

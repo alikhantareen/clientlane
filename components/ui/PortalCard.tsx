@@ -1,6 +1,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
+import { useSession } from "next-auth/react";
 
 export interface PortalCardProps {
   cardImage: string;
@@ -9,8 +10,9 @@ export interface PortalCardProps {
   status: string;
   statusColor?: string; // hex or tailwind color
   clientName: string;
+  freelancerName?: string;
   lastUpdated: string;
-  newComments: string;
+  newUpdates: string;
   onShareLink?: () => void;
   onView?: () => void;
   shareLabel?: string;
@@ -24,13 +26,16 @@ export function PortalCard({
   status,
   statusColor = "#268E00",
   clientName,
+  freelancerName,
   lastUpdated,
-  newComments,
+  newUpdates,
   onShareLink,
   onView,
   shareLabel = "Share Link",
   viewLabel = "View",
 }: PortalCardProps) {
+  const { data: session } = useSession();
+  const user = session?.user as any;
   return (
     <div
       className="w-full min-h-[350px] sm:min-h-[380px] md:min-h-[396px] rounded-[5px] bg-[#D9D9D9] shadow-[0_8px_8px_0_rgba(0,0,0,0.25)] flex flex-col relative overflow-hidden p-3 sm:p-4 gap-3 sm:gap-4 group hover:shadow-[0_12px_16px_0_rgba(0,0,0,0.35)] transition-shadow duration-300"
@@ -77,26 +82,28 @@ export function PortalCard({
       {/* Info Section */}
       <div className="flex flex-col gap-2 sm:gap-3 pt-1 sm:pt-2 flex-1">
         <div className="font-normal text-xs sm:text-[14px] leading-[1.21] text-black truncate">
-          {clientName}
+          {user?.role === "freelancer" ? clientName : freelancerName}
         </div>
         <div className="font-normal text-xs sm:text-[14px] leading-[1.21] text-black truncate">
           {lastUpdated}
         </div>
         <div className="font-normal text-xs sm:text-[14px] leading-[1.21] text-black truncate">
-          {newComments}
+          {newUpdates}
         </div>
       </div>
 
       {/* Action Buttons */}
       <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mt-auto w-full">
-        <Button
-          variant="outline"
-          className="flex-1 sm:min-w-[100px] h-7 sm:h-[28px] rounded-[5px] border border-[#9E9E9E] text-black text-xs sm:text-[14px] font-normal px-2 sm:px-3 hover:bg-[#c5c5c5] transition-colors cursor-pointer"
-          style={{ background: "#D9D9D9" }}
-          onClick={onShareLink}
-        >
-          {shareLabel}
-        </Button>
+        {user?.role === "freelancer" && (
+          <Button
+            variant="outline"
+            className="flex-1 sm:min-w-[100px] h-7 sm:h-[28px] rounded-[5px] border border-[#9E9E9E] text-black text-xs sm:text-[14px] font-normal px-2 sm:px-3 hover:bg-[#c5c5c5] transition-colors cursor-pointer"
+            style={{ background: "#D9D9D9" }}
+            onClick={onShareLink}
+          >
+            {shareLabel}
+          </Button>
+        )}
         <Button
           className="flex-1 sm:min-w-[100px] h-7 sm:h-[28px] rounded-[5px] border border-[#9E9E9E] bg-black text-white text-xs sm:text-[14px] font-bold px-2 sm:px-3 hover:bg-gray-800 transition-colors cursor-pointer"
           onClick={onView}

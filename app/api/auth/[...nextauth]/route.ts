@@ -52,11 +52,41 @@ export const authOptions: NextAuthOptions = {
       }
       return session;
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }) {
       if (user) {
         token.role = (user as any).role;
       }
+      
+      // If no role is set (e.g., first-time Google login), fetch from database
+      if (!token.role && token.sub) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.sub },
+          select: { role: true }
+        });
+        if (dbUser) {
+          token.role = dbUser.role;
+        }
+      }
+      
       return token;
+    },
+    async signIn({ user, account, profile }) {
+      // For Google OAuth users, set a default role if they don't have one
+      if (account?.provider === "google" && user.email) {
+        const existingUser = await prisma.user.findUnique({
+          where: { email: user.email },
+          select: { id: true, role: true }
+        });
+        
+        // If user exists but has no role, or if it's a new user from Google
+        if (existingUser && !existingUser.role) {
+          await prisma.user.update({
+            where: { email: user.email },
+            data: { role: "client" } // Default role for Google users
+          });
+        }
+      }
+      return true;
     },
   },
   pages: {

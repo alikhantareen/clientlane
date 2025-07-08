@@ -29,8 +29,8 @@ import {
 import { AddUpdateModal } from "./AddUpdateModal";
 import { formatDistanceToNow } from "date-fns";
 import { useRouter } from "next/navigation";
-import { useUser } from "@/lib/contexts/UserContext";
 import { toast } from "sonner";
+import { useSession } from "next-auth/react";
 
 interface Update {
   id: string;
@@ -59,7 +59,8 @@ interface UpdatesTabProps {
 
 export function UpdatesTab({ portalId }: UpdatesTabProps) {
   const router = useRouter();
-  const { user } = useUser();
+  const { data: session } = useSession();
+  const user = session?.user as any;
   const [updatesSearchInput, setUpdatesSearchInput] = useState("");
   const [updatesSearch, setUpdatesSearch] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -246,15 +247,17 @@ export function UpdatesTab({ portalId }: UpdatesTabProps) {
         </div>
 
         {/* Add Update Button - Right aligned */}
-        <div className="flex-shrink-0">
-          <Button
-            onClick={handleAddUpdate}
-            className="bg-black text-white hover:bg-gray-800 px-4 py-2 rounded-lg flex items-center gap-2 w-full sm:w-auto"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Update</span>
-          </Button>
-        </div>
+        {user?.role === "freelancer" && (
+          <div className="flex-shrink-0">
+            <Button
+              onClick={handleAddUpdate}
+              className="bg-black text-white hover:bg-gray-800 px-4 py-2 rounded-lg flex items-center gap-2 w-full sm:w-auto cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Update</span>
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Updates List */}
@@ -405,16 +408,20 @@ export function UpdatesTab({ portalId }: UpdatesTabProps) {
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 No updates yet
               </h3>
-              <p className="text-gray-600 mb-4">
-                Be the first to share an update for this portal.
-              </p>
-              <Button
-                onClick={handleAddUpdate}
-                className="bg-black text-white hover:bg-gray-800"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Update
-              </Button>
+              {user?.role === "freelancer" && (
+                <>
+                  <p className="text-gray-600 mb-4">
+                    Be the first to share an update for this portal.
+                  </p>
+                  <Button
+                    onClick={handleAddUpdate}
+                    className="bg-black text-white hover:bg-gray-800 cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Update
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         )}

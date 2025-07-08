@@ -1,12 +1,28 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, LogOut, Menu, CreditCard, LaptopMinimal, User, Users, Bell, MoreHorizontal } from "lucide-react";
-import { signOut } from "next-auth/react";
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  Home,
+  LogOut,
+  Menu,
+  CreditCard,
+  LaptopMinimal,
+  User,
+  Users,
+  Bell,
+  MoreHorizontal,
+} from "lucide-react";
+import { signOut, useSession } from "next-auth/react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { useState, useEffect } from "react";
-import { useUser } from "@/lib/contexts/UserContext";
 import Image from "next/image";
 import {
   DropdownMenu,
@@ -16,10 +32,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-const mainLinks = [
+const freelancerLinks = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
   { href: "/portal", label: "Portals", icon: LaptopMinimal },
   { href: "/clients", label: "Clients", icon: Users },
+];
+const clientLinks = [
+  { href: "/dashboard", label: "Dashboard", icon: Home },
+  { href: "/portal", label: "Portals", icon: LaptopMinimal },
 ];
 const bottomLinks: any[] = [];
 
@@ -29,7 +49,8 @@ interface SidebarProps {
 }
 export default function Sidebar({ open, setOpen }: SidebarProps) {
   const pathname = usePathname();
-  const { user } = useUser();
+  const { data: session } = useSession();
+  const user = session?.user as any;
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
   // Handle window resize to properly control sidebar behavior
@@ -47,9 +68,9 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
 
     // Initial check
     handleResize();
-    window.addEventListener('resize', handleResize);
-    
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
+
+    return () => window.removeEventListener("resize", handleResize);
   }, [open, setOpen]);
 
   // Only allow toggling on md and below
@@ -63,7 +84,9 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
   const sidebarVisible = isLargeScreen ? true : open;
 
   return (
-    <aside className={`h-screen w-64 bg-black text-white flex flex-col fixed top-0 left-0 z-50 transition-transform duration-300 ${sidebarVisible ? "translate-x-0" : "-translate-x-full"} lg:static lg:translate-x-0 lg:h-auto lg:min-h-full lg:self-stretch`}>
+    <aside
+      className={`h-screen w-64 bg-black text-white flex flex-col fixed top-0 left-0 z-50 transition-transform duration-300 ${sidebarVisible ? "translate-x-0" : "-translate-x-full"} lg:static lg:translate-x-0 lg:h-auto lg:min-h-full lg:self-stretch`}
+    >
       {/* Logo and Hamburger */}
       <div className="h-16 flex items-center px-6 border-b border-gray-800 gap-2">
         <button
@@ -76,19 +99,30 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
         <span className="text-2xl font-bold tracking-tight">Clientlane</span>
       </div>
       {/* Navigation and user section, toggle visibility on mobile */}
-      <div className="flex-1 flex flex-col"> 
+      <div className="flex-1 flex flex-col">
         <nav className="flex-1 py-6 px-2 flex flex-col justify-between">
           <div className="space-y-2">
-            {mainLinks.map(({ href, label, icon: Icon }) => (
-              <Link
-                key={href}
-                href={href}
-                className={`flex items-center gap-3 px-4 py-2 rounded-md text-base font-medium transition-colors hover:bg-gray-800/80 ${pathname?.startsWith(href) ? "bg-gray-800" : ""}`}
-              >
-                <Icon className="w-5 h-5" />
-                {label}
-              </Link>
-            ))}
+            {user?.role === "freelancer"
+              ? freelancerLinks.map(({ href, label, icon: Icon }) => (
+                  <Link
+                    key={href}
+                    href={href}
+                    className={`flex items-center gap-3 px-4 py-2 rounded-md text-base font-medium transition-colors hover:bg-gray-800/80 ${pathname?.startsWith(href) ? "bg-gray-800" : ""}`}
+                  >
+                    <Icon className="w-5 h-5" />
+                    {label}
+                  </Link>
+                ))
+              : clientLinks.map(({ href, label, icon: Icon }) => (
+                  <Link
+                    key={href}
+                    href={href}
+                    className={`flex items-center gap-3 px-4 py-2 rounded-md text-base font-medium transition-colors hover:bg-gray-800/80 ${pathname?.startsWith(href) ? "bg-gray-800" : ""}`}
+                  >
+                    <Icon className="w-5 h-5" />
+                    {label}
+                  </Link>
+                ))}
           </div>
           <div className="space-y-2 mb-4">
             {bottomLinks.map(({ href, label, icon: Icon }) => (
@@ -128,25 +162,36 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
                 <MoreHorizontal className="w-4 h-4 text-gray-400" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent 
-              align="start" 
-              side="right" 
+            <DropdownMenuContent
+              align="start"
+              side="right"
               className="w-56 mb-2 ml-2"
             >
               <DropdownMenuItem asChild>
-                <Link href="/settings" className="flex items-center gap-2 cursor-pointer">
+                <Link
+                  href="/settings"
+                  className="flex items-center gap-2 cursor-pointer"
+                >
                   <User className="w-4 h-4" />
                   Account
                 </Link>
               </DropdownMenuItem>
+              {user?.role === "freelancer" && (
+                <DropdownMenuItem asChild>
+                  <Link
+                    href="/subscriptions"
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <CreditCard className="w-4 h-4" />
+                    Billing
+                  </Link>
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem asChild>
-                <Link href="/subscriptions" className="flex items-center gap-2 cursor-pointer">
-                  <CreditCard className="w-4 h-4" />
-                  Billing
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/notifications" className="flex items-center gap-2 cursor-pointer">
+                <Link
+                  href="/notifications"
+                  className="flex items-center gap-2 cursor-pointer"
+                >
                   <Bell className="w-4 h-4" />
                   Notifications
                 </Link>
@@ -161,7 +206,7 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          
+
           {/* Logout Dialog */}
           <Dialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
             <DialogContent>
@@ -196,4 +241,4 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
       </div>
     </aside>
   );
-} 
+}

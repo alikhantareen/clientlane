@@ -384,7 +384,7 @@ export function AddUpdateModal({ isOpen, onClose, portalId, editUpdate }: AddUpd
               disabled={isLoading || !title.trim() || !editor?.getHTML().trim()}
               className="bg-black text-white hover:bg-gray-800 cursor-pointer"
             >
-              {isLoading ? (editUpdate ? "Updating..." : "Posting...") : (editUpdate ? "Update" : "Post")}
+              {isLoading ? (editUpdate ? "Updating..." : "Adding...") : (editUpdate ? "Update" : "Add")}
             </Button>
           </div>
         </div>

@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DeleteFileModal } from "./DeleteFileModal";
 import { formatDistanceToNow } from "date-fns";
+import { useSession } from "next-auth/react";
 
 interface File {
   id: string;
@@ -34,6 +35,8 @@ interface FilesTabProps {
 }
 
 export function FilesTab({ portalId }: FilesTabProps) {
+  const { data: session } = useSession();
+  const user = session?.user as any;
   const [filesSearchInput, setFilesSearchInput] = useState("");
   const [filesSearch, setFilesSearch] = useState("");
   const [files, setFiles] = useState<File[]>([]);
@@ -307,15 +310,17 @@ export function FilesTab({ portalId }: FilesTabProps) {
                       <Download className="w-4 h-4" />
                       <span className="hidden sm:inline">Download</span>
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDeleteClick(file)}
-                      className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      <span className="hidden sm:inline">Delete</span>
-                    </Button>
+                    {user?.id === file.user.id && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeleteClick(file)}
+                        className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        <span className="hidden sm:inline">Delete</span>
+                      </Button>
+                    )}
                   </div>
                 </div>
               </div>

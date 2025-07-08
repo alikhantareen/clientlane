@@ -157,7 +157,7 @@ export async function POST(req: NextRequest) {
       });
 
       // 4. Send welcome email based on client status
-      const magicLink = `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/magic-login/${token}`;
+      const magicLink = `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/login?token=${token}`;
       
       let emailHtml = "";
       let emailSubject = "";
