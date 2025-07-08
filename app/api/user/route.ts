@@ -4,6 +4,7 @@ import { getToken } from "next-auth/jwt";
 import { z } from "zod";
 import fs from "fs";
 import path from "path";
+import { canUserUploadFiles } from "@/lib/utils/subscription";
 
 const updateProfileSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").optional(),
@@ -77,6 +78,16 @@ export async function PATCH(req: NextRequest) {
     let image_url = undefined;
     if (files.image) {
       const file = files.image as File;
+      
+      // Check file upload limits for profile image
+      const uploadCheck = await canUserUploadFiles(token.sub!, file.size);
+      if (!uploadCheck.allowed) {
+        return NextResponse.json({ 
+          error: uploadCheck.reason,
+          upgradeRequired: uploadCheck.upgradeRequired 
+        }, { status: 403 });
+      }
+      
       const buffer = await file.arrayBuffer();
       const filename = `profile_${Date.now()}_${file.name}`;
       const filepath = path.join(process.cwd(), "public/uploads", filename);

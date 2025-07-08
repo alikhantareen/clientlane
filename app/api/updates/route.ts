@@ -5,6 +5,7 @@ import { z } from "zod";
 import fs from "fs";
 import path from "path";
 import { createNotification } from "@/lib/utils/notifications";
+import { canUserUploadFiles } from "@/lib/utils/subscription";
 
 const createUpdateSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -69,6 +70,19 @@ export async function POST(req: NextRequest) {
 
     if (!portal) {
       return NextResponse.json({ error: "Portal not found or access denied" }, { status: 404 });
+    }
+
+    // Check file upload limits if there are files
+    if (files.length > 0) {
+      const totalFileSize = files.reduce((sum, file) => sum + file.size, 0);
+      const uploadCheck = await canUserUploadFiles(token.sub!, totalFileSize);
+      
+      if (!uploadCheck.allowed) {
+        return NextResponse.json({ 
+          error: uploadCheck.reason,
+          upgradeRequired: uploadCheck.upgradeRequired 
+        }, { status: 403 });
+      }
     }
 
     // Handle file uploads

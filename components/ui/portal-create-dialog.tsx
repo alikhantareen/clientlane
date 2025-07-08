@@ -5,12 +5,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Plus } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { useSession } from "next-auth/react";
 
 export default function PortalCreateDialog() {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [canCreatePortal, setCanCreatePortal] = useState(true);
+  const [limitMessage, setLimitMessage] = useState("");
+  const { data: session } = useSession();
   const [form, setForm] = useState({
     portalName: "",
     clientEmail: "",
@@ -22,6 +26,27 @@ export default function PortalCreateDialog() {
     dueDate: "",
     welcomeNote: "",
   });
+
+  // Check if user can create portal on component mount
+  useEffect(() => {
+    const checkLimits = async () => {
+      if (!session?.user) return;
+      
+      try {
+        const response = await fetch('/api/plan-limits/check-portal-creation');
+        const data = await response.json();
+        
+        setCanCreatePortal(data.allowed);
+        if (!data.allowed) {
+          setLimitMessage(data.reason || "Unable to create portal");
+        }
+      } catch (error) {
+        console.error('Error checking portal limits:', error);
+      }
+    };
+
+    checkLimits();
+  }, [session]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type, files, multiple, options } = e.target as any;
@@ -69,7 +94,14 @@ export default function PortalCreateDialog() {
         });
         setOpen(false);
       } else {
-        toast.error(data.error || "Failed to create portal");
+        const errorMessage = data.error || "Failed to create portal";
+        toast.error(errorMessage);
+        
+        // If it's a limit error, refresh the limit check
+        if (data.upgradeRequired) {
+          setCanCreatePortal(false);
+          setLimitMessage(errorMessage);
+        }
       }
     } catch (err) {
       toast.error("Server error");
@@ -81,10 +113,19 @@ export default function PortalCreateDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-black text-white hover:bg-gray-800 hover:text-white cursor-pointer w-full md:w-fit">
-          <Plus className="w-4 h-4 mr-2" />
-          Create Portal
-        </Button>
+        <div className="w-full md:w-fit">
+          <Button 
+            disabled={!canCreatePortal}
+            className="bg-black text-white hover:bg-gray-800 hover:text-white cursor-pointer w-full md:w-fit disabled:opacity-50 disabled:cursor-not-allowed"
+            title={!canCreatePortal ? limitMessage : "Create a new portal"}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Create Portal
+          </Button>
+          {!canCreatePortal && (
+            <p className="text-sm text-red-600 mt-1">{limitMessage}</p>
+          )}
+        </div>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

@@ -7,6 +7,7 @@ import { hashPassword, generatePassword } from "@/lib/auth/password";
 import { sendEmail } from "@/lib/utils/email";
 import crypto from "crypto";
 import { getToken } from "next-auth/jwt";
+import { canUserCreatePortal, canUserUploadFiles } from "@/lib/utils/subscription";
 
 const portalSchema = z.object({
   name: z.string().min(2),
@@ -39,6 +40,15 @@ export async function POST(req: NextRequest) {
 
     if (user.role !== "freelancer") {
       return NextResponse.json({ error: "Only freelancers can create portals" }, { status: 403 });
+    }
+
+    // Check if user can create a new portal (plan limits)
+    const canCreate = await canUserCreatePortal(user.id);
+    if (!canCreate.allowed) {
+      return NextResponse.json({ 
+        error: canCreate.reason,
+        upgradeRequired: canCreate.upgradeRequired 
+      }, { status: 403 });
     }
 
     // Ensure uploads dir exists
@@ -98,6 +108,16 @@ export async function POST(req: NextRequest) {
     let thumbnail_url = "";
     if (files.thumbnail) {
       const file = files.thumbnail as File;
+      
+      // Check file upload limits for thumbnail
+      const uploadCheck = await canUserUploadFiles(user.id, file.size);
+      if (!uploadCheck.allowed) {
+        return NextResponse.json({ 
+          error: uploadCheck.reason,
+          upgradeRequired: uploadCheck.upgradeRequired 
+        }, { status: 403 });
+      }
+      
       const buffer = await file.arrayBuffer();
       const filename = `${Date.now()}_${file.name}`;
       const filepath = path.join(uploadDir, filename);

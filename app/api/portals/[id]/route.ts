@@ -4,6 +4,7 @@ import { getToken } from "next-auth/jwt";
 import { z } from "zod";
 import fs from "fs";
 import path from "path";
+import { canUserUploadFiles } from "@/lib/utils/subscription";
 import { createNotification } from "@/lib/utils/notifications";
 
 const updatePortalSchema = z.object({
@@ -210,6 +211,16 @@ export async function PUT(
     let thumbnail_url = existingPortal.thumbnail_url;
     if (files.thumbnail) {
       const file = files.thumbnail as File;
+      
+      // Check file upload limits for thumbnail
+      const uploadCheck = await canUserUploadFiles(user.id, file.size);
+      if (!uploadCheck.allowed) {
+        return NextResponse.json({ 
+          error: uploadCheck.reason,
+          upgradeRequired: uploadCheck.upgradeRequired 
+        }, { status: 403 });
+      }
+      
       const buffer = await file.arrayBuffer();
       const filename = `${Date.now()}_${file.name}`;
       const filepath = path.join(uploadDir, filename);

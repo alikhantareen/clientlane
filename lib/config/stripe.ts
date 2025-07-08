@@ -1,4 +1,5 @@
 import Stripe from 'stripe';
+import { PLAN_LIMITS } from './plan-limits';
 
 // Initialize Stripe with secret key (only if available)
 export const stripe = process.env.STRIPE_SECRET_KEY 
@@ -27,7 +28,8 @@ export const SUBSCRIPTION_PLANS = {
     priceId: null, // Free plan doesn't need a Stripe price ID
     features: [
       '1 client portal',
-      'Unlimited file uploads',
+      '100MB storage',
+      '5MB per file upload',
       'Comments & collaboration',
       'Activity feed & notifications',
       'Basic support'
@@ -43,9 +45,11 @@ export const SUBSCRIPTION_PLANS = {
     priceId: process.env.STRIPE_PRO_PRICE_ID || '',
     features: [
       'Up to 5 client portals',
-      'Unlimited file uploads',
+      '1GB storage',
+      '25MB per file upload',
       'Comments & collaboration',
       'Activity feed & notifications',
+      'Team collaboration',
       'Priority support',
       'Custom branding',
       'Advanced analytics'
@@ -61,9 +65,11 @@ export const SUBSCRIPTION_PLANS = {
     priceId: process.env.STRIPE_AGENCY_PRICE_ID || '',
     features: [
       'Unlimited client portals',
-      'Unlimited file uploads',
+      'Unlimited storage',
+      '100MB per file upload',
       'Comments & collaboration',
       'Activity feed & notifications',
+      'Unlimited team members',
       '24/7 priority support',
       'Custom branding',
       'Advanced analytics',

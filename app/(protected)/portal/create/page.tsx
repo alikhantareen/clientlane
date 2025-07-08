@@ -3,10 +3,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import {
   Popover,
   PopoverTrigger,
@@ -18,7 +19,11 @@ import { Calendar as CalendarIcon } from "lucide-react";
 
 export default function CreatePortalPage() {
   const router = useRouter();
+  const { data: session } = useSession();
   const [loading, setLoading] = useState(false);
+  const [canCreatePortal, setCanCreatePortal] = useState(true);
+  const [limitMessage, setLimitMessage] = useState("");
+  const [checkingLimits, setCheckingLimits] = useState(true);
   const [form, setForm] = useState({
     portalName: "",
     clientEmail: "",
@@ -31,6 +36,31 @@ export default function CreatePortalPage() {
     welcomeNote: "",
   });
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
+
+  // Check if user can create portal on page load
+  useEffect(() => {
+    const checkLimits = async () => {
+      if (!session?.user) return;
+      
+      try {
+        const response = await fetch('/api/plan-limits/check-portal-creation');
+        const data = await response.json();
+        
+        setCanCreatePortal(data.allowed);
+        if (!data.allowed) {
+          setLimitMessage(data.reason || "Unable to create portal");
+        }
+      } catch (error) {
+        console.error('Error checking portal limits:', error);
+        setCanCreatePortal(false);
+        setLimitMessage("Unable to verify plan limits. Please try again.");
+      } finally {
+        setCheckingLimits(false);
+      }
+    };
+
+    checkLimits();
+  }, [session]);
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -83,7 +113,14 @@ export default function CreatePortalPage() {
           router.push("/portal");
         }, 1000);
       } else {
-        toast.error(data.error || "Failed to create portal");
+        const errorMessage = data.error || "Failed to create portal";
+        toast.error(errorMessage);
+        
+        // If it's a limit error, refresh the limit check
+        if (data.upgradeRequired) {
+          setCanCreatePortal(false);
+          setLimitMessage(errorMessage);
+        }
       }
     } catch (err) {
       toast.error("Server error");
@@ -91,6 +128,58 @@ export default function CreatePortalPage() {
       setLoading(false);
     }
   };
+
+  // If checking limits, show loading
+  if (checkingLimits) {
+    return (
+      <main className="max-w-2xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
+            <p className="text-gray-600">Checking plan limits...</p>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  // If can't create portal, show warning
+  if (!canCreatePortal) {
+    return (
+      <main className="max-w-2xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center gap-2 mb-6">
+          <Button
+            variant="ghost"
+            onClick={() => router.push("/portal")}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 cursor-pointer"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Portals
+          </Button>
+        </div>
+        
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <h1 className="text-2xl font-bold text-red-800 mb-4">Cannot Create Portal</h1>
+          <p className="text-red-700 mb-4">{limitMessage}</p>
+          <div className="flex gap-4">
+            <Button
+              onClick={() => router.push("/subscriptions")}
+              className="bg-red-600 text-white hover:bg-red-700"
+            >
+              Upgrade Plan
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => router.push("/portal")}
+              className="border-red-300 text-red-700 hover:bg-red-50"
+            >
+              Back to Portals
+            </Button>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="max-w-2xl mx-auto py-10 px-4 sm:px-6 lg:px-8">

@@ -1,4 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { PlanLimitWarningBanner } from '@/components/ui'
 
 export default function DashboardPage() {
   return (
@@ -9,6 +10,8 @@ export default function DashboardPage() {
           Welcome to your protected dashboard area.
         </p>
       </div>
+      
+      <PlanLimitWarningBanner />
       
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>

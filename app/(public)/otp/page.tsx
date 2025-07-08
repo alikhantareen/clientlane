@@ -176,7 +176,7 @@ export default function OtpPage() {
                 maxLength={6}
               />
             </div>
-            <Button type="submit" className="w-full bg-black text-white font-semibold text-lg py-3 rounded-md" disabled={loading}>
+            <Button type="submit" className="w-full bg-black text-white font-semibold text-lg py-3 rounded-md cursor-pointer" disabled={loading}>
               {loading ? "Verifying..." : "Verify OTP"}
             </Button>
           </form>

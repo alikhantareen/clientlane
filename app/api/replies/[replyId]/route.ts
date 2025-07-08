@@ -4,6 +4,7 @@ import { getToken } from "next-auth/jwt";
 import { z } from "zod";
 import fs from "fs";
 import path from "path";
+import { canUserUploadFiles } from "@/lib/utils/subscription";
 
 const updateReplySchema = z.object({
   content: z.string().min(1, "Content is required"),
@@ -79,6 +80,19 @@ export async function PUT(
 
     if (!reply) {
       return NextResponse.json({ error: "Reply not found or unauthorized" }, { status: 404 });
+    }
+
+    // Check file upload limits if there are files
+    if (files.length > 0) {
+      const totalFileSize = files.reduce((sum, file) => sum + file.size, 0);
+      const uploadCheck = await canUserUploadFiles(token.sub!, totalFileSize);
+      
+      if (!uploadCheck.allowed) {
+        return NextResponse.json({ 
+          error: uploadCheck.reason,
+          upgradeRequired: uploadCheck.upgradeRequired 
+        }, { status: 403 });
+      }
     }
 
     // Handle file uploads

@@ -19,6 +19,7 @@ import type { DateRange } from "react-day-picker";
 import { StatusMultiSelect } from "@/components/ui/StatusMultiSelect";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { PlanLimitWarningBanner } from "@/components/ui";
 
 export default function AllPortalsPage() {
   const { data: session } = useSession();
@@ -34,6 +35,8 @@ export default function AllPortalsPage() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<string[]>([]);
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [canCreatePortal, setCanCreatePortal] = useState(true);
+  const [limitMessage, setLimitMessage] = useState("");
   const searchTimeout = useRef<NodeJS.Timeout | null>(null);
   const [hasEverLoadedPortals, setHasEverLoadedPortals] = useState<
     boolean | null
@@ -48,6 +51,27 @@ export default function AllPortalsPage() {
     }
     checkAnyPortals();
   }, []);
+
+  // Check if user can create portal
+  useEffect(() => {
+    const checkLimits = async () => {
+      if (!session?.user || user?.role !== "freelancer") return;
+      
+      try {
+        const response = await fetch('/api/plan-limits/check-portal-creation');
+        const data = await response.json();
+        
+        setCanCreatePortal(data.allowed);
+        if (!data.allowed) {
+          setLimitMessage(data.reason || "Unable to create portal");
+        }
+      } catch (error) {
+        console.error('Error checking portal limits:', error);
+      }
+    };
+
+    checkLimits();
+  }, [session, user]);
 
   useEffect(() => {
     // Initial fetch
@@ -155,17 +179,35 @@ export default function AllPortalsPage() {
         </div>
         {
           user?.role === "freelancer" && (
-            <Link
-              href="/portal/create"
-              className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-black text-white hover:bg-gray-800 hover:text-white cursor-pointer w-full md:w-fit px-4 py-2 gap-2"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Create Portal
-            </Link>
+            <div className="w-full md:w-fit flex flex-col items-end">
+              {canCreatePortal ? (
+                <Link
+                  href="/portal/create"
+                  className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-black text-white hover:bg-gray-800 hover:text-white cursor-pointer w-full md:w-fit px-4 py-2 gap-2"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Portal
+                </Link>
+              ) : (
+                <div className="w-full md:w-fit flex flex-col items-end">
+                  <button
+                    disabled
+                    className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-gray-400 text-gray-200 cursor-not-allowed w-full md:w-fit px-4 py-2 gap-2"
+                    title={limitMessage}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Portal
+                  </button>
+                  <p className="text-sm text-red-600 mt-1">{limitMessage}</p>
+                </div>
+              )}
+            </div>
           )
         }
       </section>
       <hr className="mt-8 mb-8" />
+
+      <PlanLimitWarningBanner />
 
       {/* Portal Filters Section */}
       <section className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3 mb-6 w-full">
@@ -246,13 +288,33 @@ export default function AllPortalsPage() {
               You don't have any portals yet. Click below to create your first
               portal.
             </div>
-            <Link
-              href="/portal/create"
-              className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-black text-white hover:bg-gray-800 hover:text-white px-6 py-2 gap-2"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Create Portal
-            </Link>
+            {canCreatePortal ? (
+              <Link
+                href="/portal/create"
+                className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-black text-white hover:bg-gray-800 hover:text-white px-6 py-2 gap-2"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Create Portal
+              </Link>
+            ) : (
+              <div className="text-center">
+                <button
+                  disabled
+                  className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-gray-400 text-gray-200 cursor-not-allowed px-6 py-2 gap-2"
+                  title={limitMessage}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Portal
+                </button>
+                <p className="text-sm text-red-600 mt-2">{limitMessage}</p>
+                <Link
+                  href="/subscriptions"
+                  className="text-sm text-blue-600 hover:text-blue-800 underline"
+                >
+                  Upgrade your plan
+                </Link>
+              </div>
+            )}
           </div>
         )}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">

@@ -184,7 +184,7 @@ export default function SignupPage() {
             </div>
             {error && <div className="text-red-500 text-sm">{error}</div>}
             {success && <div className="text-green-600 text-sm">{success}</div>}
-            <Button type="submit" className="w-full bg-black text-white font-semibold text-lg py-3 rounded-md" disabled={loading}>
+            <Button type="submit" className="w-full bg-black text-white font-semibold text-lg py-3 rounded-md cursor-pointer" disabled={loading}>
               {loading ? "Registering..." : "Sign Up"}
             </Button>
           </form>

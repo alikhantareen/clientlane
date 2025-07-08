@@ -1,0 +1,83 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getToken } from "next-auth/jwt";
+import { getUserPlanInfo, getUserPlanUsage, getUpgradeRecommendation } from "@/lib/utils/subscription";
+import { prisma } from "@/lib/prisma";
+
+export async function GET(req: NextRequest) {
+  try {
+    // Check authentication
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    if (!token || !token.sub) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Get user role to check if limits apply
+    const user = await prisma.user.findUnique({
+      where: { id: token.sub },
+      select: { role: true }
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Plan limits only apply to freelancers, not clients
+    if (user.role !== "freelancer") {
+      return NextResponse.json({ 
+        error: "Plan limits only apply to freelancers" 
+      }, { status: 403 });
+    }
+
+    // Get comprehensive plan and usage information
+    const [planInfo, usage, upgradeRecommendation] = await Promise.all([
+      getUserPlanInfo(token.sub),
+      getUserPlanUsage(token.sub),
+      getUpgradeRecommendation(token.sub)
+    ]);
+
+    const response = {
+      plan: {
+        id: planInfo.id,
+        name: planInfo.name,
+        isActive: planInfo.isActive,
+        isFreePlan: planInfo.isFreePlan,
+        endsAt: planInfo.endsAt,
+        limits: planInfo.limits
+      },
+      usage: {
+        clients: {
+          current: usage.clients.current,
+          limit: usage.clients.limit,
+          canCreate: usage.clients.canCreate,
+          isOverLimit: usage.clients.isOverLimit,
+          usagePercentage: usage.clients.usagePercentage
+        },
+        storage: {
+          currentMB: usage.storage.currentMB,
+          limitMB: usage.storage.limitMB,
+          canUpload: usage.storage.canUpload,
+          isOverLimit: usage.storage.isOverLimit,
+          usagePercentage: usage.storage.usagePercentage,
+          formattedCurrent: usage.storage.formattedCurrent,
+          formattedLimit: usage.storage.formattedLimit
+        },
+        team: {
+          current: usage.team.current,
+          limit: usage.team.limit,
+          canInvite: usage.team.canInvite,
+          isOverLimit: usage.team.isOverLimit,
+          usagePercentage: usage.team.usagePercentage
+        }
+      },
+      upgrade: upgradeRecommendation
+    };
+
+    return NextResponse.json(response);
+
+  } catch (error) {
+    console.error('Error getting plan limits:', error);
+    return NextResponse.json({ 
+      error: "Internal server error" 
+    }, { status: 500 });
+  }
+} 

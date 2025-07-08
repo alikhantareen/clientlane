@@ -5,6 +5,7 @@ import { z } from "zod";
 import fs from "fs";
 import path from "path";
 import { createNotification } from "@/lib/utils/notifications";
+import { canUserUploadFiles } from "@/lib/utils/subscription";
 
 const createReplySchema = z.object({
   content: z.string().min(1, "Content is required"),
@@ -189,6 +190,19 @@ export async function POST(
 
     if (!hasAccess) {
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    }
+
+    // Check file upload limits if there are files
+    if (files.length > 0) {
+      const totalFileSize = files.reduce((sum, file) => sum + file.size, 0);
+      const uploadCheck = await canUserUploadFiles(token.sub!, totalFileSize);
+      
+      if (!uploadCheck.allowed) {
+        return NextResponse.json({ 
+          error: uploadCheck.reason,
+          upgradeRequired: uploadCheck.upgradeRequired 
+        }, { status: 403 });
+      }
     }
 
     // Handle file uploads
@@ -404,6 +418,19 @@ export async function PUT(
 
     if (!existingUpdate) {
       return NextResponse.json({ error: "Update not found or you don't have permission to edit it" }, { status: 404 });
+    }
+
+    // Check file upload limits if there are files
+    if (files.length > 0) {
+      const totalFileSize = files.reduce((sum, file) => sum + file.size, 0);
+      const uploadCheck = await canUserUploadFiles(token.sub!, totalFileSize);
+      
+      if (!uploadCheck.allowed) {
+        return NextResponse.json({ 
+          error: uploadCheck.reason,
+          upgradeRequired: uploadCheck.upgradeRequired 
+        }, { status: 403 });
+      }
     }
 
     // Handle file uploads
