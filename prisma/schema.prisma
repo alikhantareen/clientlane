@@ -43,6 +43,7 @@ enum NotificationType {
   new_comment
   file_uploaded
   portal_updated
+  new_update
 }
 
 enum BillingCycle {
@@ -154,6 +155,7 @@ model Notification {
   portal_id  String
   type       NotificationType
   message    String
+  link       String            // URL to navigate to when notification is clicked
   is_read    Boolean
   created_at DateTime          @default(now())
   // Relations

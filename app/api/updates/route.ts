@@ -4,6 +4,7 @@ import { getToken } from "next-auth/jwt";
 import { z } from "zod";
 import fs from "fs";
 import path from "path";
+import { createNotification } from "@/lib/utils/notifications";
 
 const createUpdateSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -145,6 +146,18 @@ export async function POST(req: NextRequest) {
               },
             },
           });
+
+          // Create notification for file upload
+          await createNotification(
+            tx,
+            portalId,
+            token.sub!,
+            "file_uploaded",
+            {
+              updateId: newUpdate.id,
+              fileName: file.file_name,
+            }
+          );
         }
       }
 
@@ -160,6 +173,18 @@ export async function POST(req: NextRequest) {
           },
         },
       });
+
+      // Create notification for new update
+      await createNotification(
+        tx,
+        portalId,
+        token.sub!,
+        "update_created",
+        {
+          updateId: newUpdate.id,
+          updateTitle: title,
+        }
+      );
 
       return newUpdate;
     });

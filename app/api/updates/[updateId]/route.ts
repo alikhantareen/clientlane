@@ -4,6 +4,7 @@ import { getToken } from "next-auth/jwt";
 import { z } from "zod";
 import fs from "fs";
 import path from "path";
+import { createNotification } from "@/lib/utils/notifications";
 
 const createReplySchema = z.object({
   content: z.string().min(1, "Content is required"),
@@ -266,6 +267,18 @@ export async function POST(
               },
             },
           });
+
+          // Create notification for file upload
+          await createNotification(
+            tx,
+            parentUpdate.portal.id,
+            token.sub!,
+            "file_uploaded",
+            {
+              updateId: newReply.id,
+              fileName: file.file_name,
+            }
+          );
         }
       }
 
@@ -282,6 +295,19 @@ export async function POST(
           },
         },
       });
+
+      // Create notification for reply
+      await createNotification(
+        tx,
+        parentUpdate.portal.id,
+        token.sub!,
+        "reply_created",
+        {
+          updateId: updateId,
+          replyId: newReply.id,
+          parentUpdateTitle: parentUpdate.title,
+        }
+      );
 
       return newReply;
     });

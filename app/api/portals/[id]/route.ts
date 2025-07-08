@@ -4,6 +4,7 @@ import { getToken } from "next-auth/jwt";
 import { z } from "zod";
 import fs from "fs";
 import path from "path";
+import { createNotification } from "@/lib/utils/notifications";
 
 const updatePortalSchema = z.object({
   name: z.string().min(2).optional(),
@@ -294,6 +295,17 @@ export async function PUT(
         },
       },
     });
+
+    // Create notification for portal update
+    await createNotification(
+      prisma,
+      portalId,
+      user.id,
+      "portal_updated",
+      {
+        portalName: updatedPortal.name,
+      }
+    );
 
     return NextResponse.json({ 
       portal: {
