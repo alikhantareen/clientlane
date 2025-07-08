@@ -273,7 +273,7 @@ export default function PortalDetailPage() {
       {/* Tabs Navigation */}
       <div className="bg-white rounded-lg shadow-sm border mb-6">
         <div className="border-b">
-          <div className="flex overflow-x-auto scrollbar-hide">
+          <div className="flex overflow-x-auto scrollbar-hide pt-1 pl-1">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               return (

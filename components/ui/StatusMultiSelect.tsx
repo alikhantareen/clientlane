@@ -40,7 +40,7 @@ export function StatusMultiSelect({ options, value, onChange, placeholder = "Sta
         </Button>
       </PopoverTrigger>
       <PopoverContent className="p-0 w-48" align="start">
-        <div className="flex flex-col">
+        <div className="flex flex-col p-1">
           {options.map((opt) => (
             <label key={opt.value} className="flex items-center px-4 py-2 text-sm cursor-pointer hover:bg-gray-100">
               <input

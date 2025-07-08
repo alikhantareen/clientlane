@@ -55,11 +55,7 @@ const ClientActions: React.FC<ClientActionsProps> = ({ client, onAction }) => {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => onAction("view", client)}>
-          <Eye className="mr-2 h-4 w-4" />
-          View Profile
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => onAction("resend-invite", client)}>
+        <DropdownMenuItem className="cursor-pointer" onClick={() => onAction("resend-invite", client)}>
           <Send className="mr-2 h-4 w-4" />
           Resend Invite
         </DropdownMenuItem>

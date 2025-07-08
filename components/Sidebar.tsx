@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { useState, useEffect } from "react";
+import { useUser } from "@/lib/contexts/UserContext";
 import Image from "next/image";
 import {
   DropdownMenu,
@@ -51,6 +52,7 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
   const pathname = usePathname();
   const { data: session } = useSession();
   const user = session?.user as any;
+  const { user: userData } = useUser();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
   // Handle window resize to properly control sidebar behavior
@@ -143,10 +145,10 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-3 w-full text-left rounded-md p-2 hover:bg-gray-800/50 transition-colors">
                 <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-lg font-semibold">
-                  {user?.image ? (
+                  {userData?.image ? (
                     <Image
-                      src={user.image}
-                      alt={user.name || "Profile"}
+                      src={userData.image}
+                      alt={userData.name || "Profile"}
                       width={40}
                       height={40}
                       className="w-full h-full object-cover rounded-full"
@@ -156,8 +158,8 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
                   )}
                 </div>
                 <div className="flex-1">
-                  <div className="font-medium">{user?.name}</div>
-                  <div className="text-xs text-gray-400">{user?.email}</div>
+                  <div className="font-medium">{userData?.name}</div>
+                  <div className="text-xs text-gray-400">{userData?.email}</div>
                 </div>
                 <MoreHorizontal className="w-4 h-4 text-gray-400" />
               </button>

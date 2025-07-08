@@ -408,6 +408,9 @@ export function UpdatesTab({ portalId }: UpdatesTabProps) {
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 No updates yet
               </h3>
+              <p className="text-sm text-gray-400">
+                Updates shared to this portal will appear here.
+              </p>
               {user?.role === "freelancer" && (
                 <>
                   <p className="text-gray-600 mb-4">
@@ -433,7 +436,7 @@ export function UpdatesTab({ portalId }: UpdatesTabProps) {
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
               No updates found
             </h3>
-            <p className="text-gray-600">
+            <p className="text-sm text-gray-400">
               No updates match your search criteria.
             </p>
           </div>

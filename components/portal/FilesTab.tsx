@@ -357,7 +357,7 @@ export function FilesTab({ portalId }: FilesTabProps) {
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 No files uploaded yet
               </h3>
-              <p className="text-gray-600">
+              <p className="text-sm text-gray-400">
                 Files uploaded to this portal will appear here.
               </p>
             </div>
@@ -371,7 +371,7 @@ export function FilesTab({ portalId }: FilesTabProps) {
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
               No files found
             </h3>
-            <p className="text-gray-600">
+            <p className="text-sm text-gray-400">
               No files match your search criteria.
             </p>
           </div>
