@@ -317,6 +317,7 @@ export default function SettingsPage() {
                         variant="outline" 
                         onClick={() => setShowRemoveDialog(false)}
                         disabled={loading}
+                        className="cursor-pointer"
                       >
                         Cancel
                       </Button>
@@ -324,6 +325,7 @@ export default function SettingsPage() {
                         variant="destructive" 
                         onClick={handleRemoveImage}
                         disabled={loading}
+                        className="cursor-pointer"
                       >
                         {loading ? "Removing..." : "Remove Image"}
                       </Button>

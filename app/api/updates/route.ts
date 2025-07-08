@@ -128,7 +128,38 @@ export async function POST(req: NextRequest) {
             file_size: file.file_size,
           })),
         });
+
+        // Log file upload activities
+        for (const file of uploadedFiles) {
+          await tx.activity.create({
+            data: {
+              portal_id: portalId,
+              user_id: token.sub!,
+              type: "file_uploaded",
+              meta: {
+                file_name: file.file_name,
+                file_size: file.file_size,
+                file_type: file.file_type,
+                update_id: newUpdate.id,
+                update_title: title,
+              },
+            },
+          });
+        }
       }
+
+      // Log update creation activity
+      await tx.activity.create({
+        data: {
+          portal_id: portalId,
+          user_id: token.sub!,
+          type: "update_created",
+          meta: {
+            update_title: title,
+            update_id: newUpdate.id,
+          },
+        },
+      });
 
       return newUpdate;
     });

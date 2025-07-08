@@ -249,7 +249,39 @@ export async function POST(
             file_size: file.file_size,
           })),
         });
+
+        // Log file upload activities for reply
+        for (const file of uploadedFiles) {
+          await tx.activity.create({
+            data: {
+              portal_id: parentUpdate.portal.id,
+              user_id: token.sub!,
+              type: "file_uploaded",
+              meta: {
+                file_name: file.file_name,
+                file_size: file.file_size,
+                file_type: file.file_type,
+                update_id: newReply.id,
+                parent_update_id: updateId,
+              },
+            },
+          });
+        }
       }
+
+      // Log reply creation activity
+      await tx.activity.create({
+        data: {
+          portal_id: parentUpdate.portal.id,
+          user_id: token.sub!,
+          type: "reply_created",
+          meta: {
+            update_id: newReply.id,
+            parent_update_id: updateId,
+            parent_update_title: parentUpdate.title,
+          },
+        },
+      });
 
       return newReply;
     });
@@ -501,6 +533,11 @@ export async function DELETE(
             id: true,
           },
         },
+        portal: {
+          select: {
+            id: true,
+          },
+        },
       },
     });
 
@@ -558,6 +595,19 @@ export async function DELETE(
       // Delete the main update
       await tx.update.delete({
         where: { id: updateId },
+      });
+
+      // Log update deletion activity
+      await tx.activity.create({
+        data: {
+          portal_id: existingUpdate.portal.id,
+          user_id: token.sub!,
+          type: "update_deleted",
+          meta: {
+            update_title: existingUpdate.title,
+            update_id: existingUpdate.id,
+          },
+        },
       });
     });
 

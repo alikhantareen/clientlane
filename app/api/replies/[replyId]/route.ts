@@ -211,6 +211,17 @@ export async function DELETE(
       },
       include: {
         files: true,
+        portal: {
+          select: {
+            id: true,
+          },
+        },
+        parent_update: {
+          select: {
+            id: true,
+            title: true,
+          },
+        },
       },
     });
 
@@ -228,6 +239,20 @@ export async function DELETE(
       // Delete the reply itself
       await tx.update.delete({
         where: { id: replyId },
+      });
+
+      // Log reply deletion activity
+      await tx.activity.create({
+        data: {
+          portal_id: reply.portal.id,
+          user_id: token.sub!,
+          type: "reply_deleted",
+          meta: {
+            update_id: reply.id,
+            parent_update_id: reply.parent_update_id,
+            parent_update_title: reply.parent_update?.title,
+          },
+        },
       });
     });
 

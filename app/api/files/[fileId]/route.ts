@@ -54,9 +54,26 @@ export async function DELETE(
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
-    // Delete file record from database
-    await prisma.file.delete({
-      where: { id: fileId },
+    // Delete file record from database and log activity in transaction
+    await prisma.$transaction(async (tx) => {
+      // Delete file record
+      await tx.file.delete({
+        where: { id: fileId },
+      });
+
+      // Log file deletion activity
+      await tx.activity.create({
+        data: {
+          portal_id: file.portal.id,
+          user_id: token.sub!,
+          type: "file_deleted",
+          meta: {
+            file_name: file.file_name,
+            file_size: file.file_size || 0,
+            file_type: file.file_type || "",
+          },
+        },
+      });
     });
 
     // Delete physical file from filesystem

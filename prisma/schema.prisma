@@ -28,6 +28,14 @@ enum ActivityType {
   upload
   comment
   status_change
+  update_created
+  reply_created
+  file_uploaded
+  file_deleted
+  update_deleted
+  reply_deleted
+  portal_created
+  shared_link_created
 }
 
 enum NotificationType {

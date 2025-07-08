@@ -1,11 +1,31 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Search, Plus, Loader2, MessageCircle, MoreVertical, Edit2, Trash2 } from "lucide-react";
+import {
+  Search,
+  Plus,
+  Loader2,
+  MessageCircle,
+  MoreVertical,
+  Edit2,
+  Trash2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { AddUpdateModal } from "./AddUpdateModal";
 import { formatDistanceToNow } from "date-fns";
 import { useRouter } from "next/navigation";
@@ -43,7 +63,9 @@ export function UpdatesTab({ portalId }: UpdatesTabProps) {
   const [updatesSearchInput, setUpdatesSearchInput] = useState("");
   const [updatesSearch, setUpdatesSearch] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingUpdate, setEditingUpdate] = useState<Update | undefined>(undefined);
+  const [editingUpdate, setEditingUpdate] = useState<Update | undefined>(
+    undefined
+  );
   const [deleteUpdateId, setDeleteUpdateId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [updates, setUpdates] = useState<Update[]>([]);
@@ -156,8 +178,10 @@ export function UpdatesTab({ portalId }: UpdatesTabProps) {
       }
 
       // Remove the deleted update from the list
-      setUpdates(prev => prev.filter(update => update.id !== deleteUpdateId));
-      setTotalUpdates(prev => prev - 1);
+      setUpdates((prev) =>
+        prev.filter((update) => update.id !== deleteUpdateId)
+      );
+      setTotalUpdates((prev) => prev - 1);
       setDeleteUpdateId(null);
       toast.success("Update deleted successfully");
     } catch (error) {
@@ -293,9 +317,11 @@ export function UpdatesTab({ portalId }: UpdatesTabProps) {
                       </span>
                     </div>
                     <div className="space-y-2">
-                      <p 
+                      <p
                         className="text-gray-900 text-sm font-medium cursor-pointer hover:underline"
-                        onClick={() => router.push(`/portal/${portalId}/update/${update.id}`)}
+                        onClick={() =>
+                          router.push(`/portal/${portalId}/update/${update.id}`)
+                        }
                       >
                         {update.title}
                       </p>
@@ -307,7 +333,7 @@ export function UpdatesTab({ portalId }: UpdatesTabProps) {
                       </div>
                     </div>
                   </div>
-                  
+
                   {/* Three dots dropdown - Only show for the freelancer who created the update */}
                   {user && user.id === update.user.id && (
                     <div className="absolute top-4 right-4 z-10 cursor-pointer">
@@ -323,14 +349,14 @@ export function UpdatesTab({ portalId }: UpdatesTabProps) {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             onClick={() => handleEditUpdate(update)}
                             className="flex items-center gap-2 cursor-pointer"
                           >
                             <Edit2 className="h-4 w-4" />
                             Edit
                           </DropdownMenuItem>
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             onClick={() => handleDeleteUpdate(update.id)}
                             className="flex items-center gap-2 cursor-pointer text-red-600 focus:text-red-600"
                           >
@@ -416,25 +442,39 @@ export function UpdatesTab({ portalId }: UpdatesTabProps) {
       />
 
       {/* Delete Confirmation Modal */}
-      <Dialog open={!!deleteUpdateId} onOpenChange={() => setDeleteUpdateId(null)}>
+      <Dialog
+        open={!!deleteUpdateId}
+        onOpenChange={() => setDeleteUpdateId(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Update</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this update? This action cannot be undone.
-              All replies and associated files will also be deleted.
+              Are you sure you want to delete this update? This action cannot be
+              undone. All replies and associated files will also be deleted.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={cancelDelete} disabled={isDeleting}>
+            <Button
+              variant="outline"
+              onClick={cancelDelete}
+              disabled={isDeleting}
+              className="cursor-pointer"
+            >
               Cancel
             </Button>
-            <Button 
-              variant="destructive" 
+            <Button
+              variant="destructive"
               onClick={confirmDelete}
               disabled={isDeleting}
+              className="cursor-pointer"
             >
-              {isDeleting ? "Deleting..." : "Delete"}
+              {isDeleting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Trash2 className="w-4 h-4" />
+              )}
+              {isDeleting ? "Deleting..." : "Delete Update"}
             </Button>
           </DialogFooter>
         </DialogContent>

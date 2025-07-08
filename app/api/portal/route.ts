@@ -294,6 +294,34 @@ export async function POST(req: NextRequest) {
         html: emailHtml,
       });
 
+      // Log portal creation activity
+      await tx.activity.create({
+        data: {
+          portal_id: portal.id,
+          user_id: createdBy,
+          type: "portal_created",
+          meta: {
+            portal_name: name,
+            client_email: clientEmail,
+            client_name: clientName,
+            is_new_client: isNewClient,
+          },
+        },
+      });
+
+      // Log shared link creation activity
+      await tx.activity.create({
+        data: {
+          portal_id: portal.id,
+          user_id: createdBy,
+          type: "shared_link_created",
+          meta: {
+            shared_link_token: token,
+            expires_at: expiresAt.toISOString(),
+          },
+        },
+      });
+
       return { portal, client, sharedLink };
     });
 
