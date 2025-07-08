@@ -5,4 +5,5 @@ export { CommentsTab } from "./CommentsTab";
 export { ActivityTab } from "./ActivityTab";
 export { SettingsTab } from "./SettingsTab";
 export { AddUpdateModal } from "./AddUpdateModal";
-export { DeleteFileModal } from "./DeleteFileModal"; 
+export { DeleteFileModal } from "./DeleteFileModal";
+export { DeletePortalModal } from "./DeletePortalModal"; 

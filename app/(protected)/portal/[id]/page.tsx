@@ -18,7 +18,9 @@ import {
   UpdatesTab,
   FilesTab,
   ActivityTab,
+  DeletePortalModal,
 } from "@/components/portal";
+import { toast } from "sonner";
 
 interface PortalData {
   id: string;
@@ -33,6 +35,7 @@ interface PortalData {
     image: string | null;
   };
   comments: any[];
+  updates: any[];
   shared_links: any[];
   created_at: string;
   updated_at: string;
@@ -47,6 +50,7 @@ export default function PortalDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
   const id = params?.id as string;
 
@@ -71,6 +75,34 @@ export default function PortalDetailPage() {
       setError("Network error occurred");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleEdit = () => {
+    router.push(`/portal/${id}/edit`);
+  };
+
+  const handleDeleteClick = () => {
+    setDeleteModalOpen(true);
+  };
+
+  const handleDelete = async (portalId: string) => {
+    try {
+      const response = await fetch(`/api/portals/${portalId}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        toast.success("Portal deleted successfully!");
+        setTimeout(() => {
+          router.push("/portal");
+        }, 1000);
+      } else {
+        const data = await response.json();
+        toast.error(data.error || "Failed to delete portal");
+      }
+    } catch (err) {
+      toast.error("Failed to delete portal");
     }
   };
 
@@ -246,12 +278,26 @@ export default function PortalDetailPage() {
 
         {/* Tab Content */}
         <div className="p-4 sm:p-6">
-                                {activeTab === "overview" && <OverviewTab portal={portal} />}
-           {activeTab === "updates" && <UpdatesTab portalId={portal.id} />}
-           {activeTab === "files" && <FilesTab portalId={portal.id} />}
-           {activeTab === "activity" && <ActivityTab portalId={portal.id} />}
+          {activeTab === "overview" && (
+            <OverviewTab 
+              portal={portal} 
+              onEdit={handleEdit}
+              onDelete={handleDeleteClick}
+            />
+          )}
+          {activeTab === "updates" && <UpdatesTab portalId={portal.id} />}
+          {activeTab === "files" && <FilesTab portalId={portal.id} />}
+          {activeTab === "activity" && <ActivityTab portalId={portal.id} />}
         </div>
       </div>
+
+      {/* Delete Portal Modal */}
+      <DeletePortalModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        portal={portal}
+        onDelete={handleDelete}
+      />
     </div>
   );
 }
