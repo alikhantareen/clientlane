@@ -66,7 +66,7 @@ export default function ForgotPasswordPage() {
                 className="mt-1"
               />
             </div>
-            <Button type="submit" className="w-full bg-blue-600 text-white font-semibold text-lg py-3 rounded-md cursor-pointer" disabled={loading}>
+            <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-lg py-3 rounded-md cursor-pointer" disabled={loading}>
               {loading ? "Sending..." : "Send OTP"}
             </Button>
           </form>

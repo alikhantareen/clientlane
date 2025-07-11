@@ -183,10 +183,10 @@ export default function TopNavigation({ children }: TopNavigationProps) {
   return (
     <>
       {/* Dark Background Wrapper */}
-      <div className="bg-slate-900 text-white rounded-none md:rounded-3xl mx-4 sm:mx-6 lg:mx-8 my-4">
+      <div className="bg-slate-900 text-white rounded-3xl mx-4 sm:mx-6 lg:mx-8 my-4">
         {/* Top Navigation */}
         <nav className="sticky top-0 z-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="w-full px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
               {/* Logo */}
               <div className="flex items-center">
@@ -376,7 +376,7 @@ export default function TopNavigation({ children }: TopNavigationProps) {
 
         {/* Stats Section - Part of the dark wrapper */}
         {children && (
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+          <div className="w-full px-4 sm:px-6 lg:px-8 pb-8">
             {children}
           </div>
         )}

@@ -12,6 +12,7 @@ import {
   ClientsApiResponse 
 } from "@/lib/types";
 import { toast } from "sonner";
+import TopNavigation from "@/components/TopNavigation";
 
 export default function ClientsPage() {
   const { data: session, status } = useSession();
@@ -134,25 +135,29 @@ export default function ClientsPage() {
   const columns = createColumns(handleClientAction);
 
   return (
-    <div className="container py-2 w-full">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">My Clients</h1>
-        <p className="text-gray-600 mt-2">
-          Manage and view all your clients in one place
-        </p>
-      </div>
-      <hr className="mt-8 mb-8" />
-
-      <DataTable
-        columns={columns}
-        data={clients}
-        total={total}
-        page={page}
-        limit={limit}
-        onPageChange={handlePageChange}
-        onFiltersChange={handleFiltersChange}
-        isLoading={isLoading}
-      />
+    <div className="min-h-screen bg-gray-50">
+      <TopNavigation>
+        <section className="flex flex-col gap-4 justify-between w-full md:flex-row md:gap-4 items-start md:items-center py-8">
+          <div className="flex flex-col">
+            <h1 className="text-2xl font-bold md:text-3xl text-white">My Clients</h1>
+            <p className="text-gray-300 mt-2">
+              Manage and view all your clients in one place
+            </p>
+          </div>
+        </section>
+      </TopNavigation>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <DataTable
+          columns={columns}
+          data={clients}
+          total={total}
+          page={page}
+          limit={limit}
+          onPageChange={handlePageChange}
+          onFiltersChange={handleFiltersChange}
+          isLoading={isLoading}
+        />
+      </main>
     </div>
   );
 } 

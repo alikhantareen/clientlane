@@ -108,16 +108,22 @@ export default function OtpPage() {
         setOtp("");
         // Route based on source: signup goes to login, forgot-password goes to reset-password, login goes to dashboard
         if (source === "signup") {
-          toast.success("Account verified successfully! Please login with your credentials.");
+          toast.success(
+            "Account verified successfully! Please login with your credentials."
+          );
           router.push("/login");
         } else if (source === "forgot-password") {
           router.push(`/reset-password?email=${encodeURIComponent(email)}`);
         } else if (source === "login") {
-          toast.success("Email verified successfully! You can now login to your account.");
+          toast.success(
+            "Email verified successfully! You can now login to your account."
+          );
           router.push("/login");
         } else {
           // Default to login for safety
-          toast.success("Account verified successfully! Please login with your credentials.");
+          toast.success(
+            "Account verified successfully! Please login with your credentials."
+          );
           router.push("/login");
         }
       } else {
@@ -143,10 +149,15 @@ export default function OtpPage() {
         body: JSON.stringify({ email }),
       });
       if (res.ok) {
-        toast.success("A new 6-digit verification code has been sent to your email.");
+        toast.success(
+          "A new 6-digit verification code has been sent to your email."
+        );
         // Start cooldown
         setCooldown(60);
-        localStorage.setItem(getCooldownKey(email), (Date.now() + 60000).toString());
+        localStorage.setItem(
+          getCooldownKey(email),
+          (Date.now() + 60000).toString()
+        );
       } else {
         toast.error("Failed to resend OTP. Please try again.");
       }
@@ -162,7 +173,11 @@ export default function OtpPage() {
         {/* Right Card (Branding) */}
         <div className="hidden md:flex flex-col justify-center items-start bg-slate-900 text-white w-1/2 p-12">
           <h1 className="text-5xl font-bold mb-4 text-left">Clientlane</h1>
-          <p className="text-2xl font-light text-left">Everything your client needs<br/>in one portal.</p>
+          <p className="text-2xl font-light text-left">
+            Everything your client needs
+            <br />
+            in one portal.
+          </p>
         </div>
         {/* Left Card (OTP Form) */}
         <div className="flex-1 bg-white p-8 md:p-16 flex flex-col justify-center">
@@ -172,7 +187,10 @@ export default function OtpPage() {
             </h2>
             <div className="flex items-center gap-2 text-gray-700 text-base">
               {source === "login" ? (
-                <span>We've sent a verification code to your email to complete the login process.</span>
+                <span>
+                  We've sent a verification code to your email to complete the
+                  login process.
+                </span>
               ) : (
                 <>
                   <span>Didn't receive the code?</span>
@@ -208,11 +226,17 @@ export default function OtpPage() {
                 </button>
               </div>
             )}
-            {!email && <div className="text-red-500 text-sm mt-2">Email is required in the URL to resend OTP.</div>}
+            {!email && (
+              <div className="text-red-500 text-sm mt-2">
+                Email is required in the URL to resend OTP.
+              </div>
+            )}
           </div>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <Label htmlFor="otp" className="font-medium">OTP</Label>
+              <Label htmlFor="otp" className="font-medium">
+                OTP
+              </Label>
               <Input
                 id="otp"
                 name="otp"
@@ -228,7 +252,11 @@ export default function OtpPage() {
                 maxLength={6}
               />
             </div>
-            <Button type="submit" className="w-full bg-blue-600 text-white font-semibold text-lg py-3 rounded-md cursor-pointer" disabled={loading}>
+            <Button
+              type="submit"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-lg py-3 rounded-md cursor-pointer"
+              disabled={loading}
+            >
               {loading ? "Verifying..." : "Verify OTP"}
             </Button>
           </form>
@@ -236,4 +264,4 @@ export default function OtpPage() {
       </div>
     </div>
   );
-} 
+}

@@ -20,6 +20,7 @@ import { StatusMultiSelect } from "@/components/ui/StatusMultiSelect";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { PlanLimitWarningBanner } from "@/components/ui";
+import TopNavigation from "@/components/TopNavigation";
 
 export default function AllPortalsPage() {
   const { data: session } = useSession();
@@ -169,45 +170,46 @@ export default function AllPortalsPage() {
     hasEverLoadedPortals === false;
 
   return (
-    <main className="w-full mx-auto py-2">
-      <section className="flex flex-col gap-4 justify-between w-full md:flex-row md:gap-4 items-start md:items-center">
-        <div className="flex flex-col">
-          <h1 className="text-2xl font-bold md:text-3xl">My Portals</h1>
-          <p className="text-gray-600 mt-2">
-            Manage and view all your projects in one place
-          </p>
-        </div>
-        {
-          user?.role === "freelancer" && (
-            <div className="w-full md:w-fit flex flex-col items-end">
-              {canCreatePortal ? (
-                <Link
-                  href="/portal/create"
-                  className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 hover:text-white cursor-pointer w-full md:w-fit px-4 py-2 gap-2"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create Portal
-                </Link>
-              ) : (
-                <div className="w-full md:w-fit flex flex-col items-end">
-                  <button
-                    disabled
-                    className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-gray-400 text-gray-200 cursor-not-allowed w-full md:w-fit px-4 py-2 gap-2"
-                    title={limitMessage}
+    <div className="min-h-screen bg-gray-50">
+      <TopNavigation>
+        <section className="flex flex-col gap-4 justify-between w-full md:flex-row md:gap-4 items-start md:items-center py-8">
+          <div className="flex flex-col">
+            <h1 className="text-2xl font-bold md:text-3xl text-white">My Portals</h1>
+            <p className="text-gray-300 mt-2">
+              Manage and view all your projects in one place
+            </p>
+          </div>
+          {
+            user?.role === "freelancer" && (
+              <div className="w-full md:w-fit flex flex-col items-end">
+                {canCreatePortal ? (
+                  <Link
+                    href="/portal/create"
+                    className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 hover:text-white cursor-pointer w-full md:w-fit px-4 py-2 gap-2"
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     Create Portal
-                  </button>
-                  <p className="text-sm text-red-600 mt-1">{limitMessage}</p>
-                </div>
-              )}
-            </div>
-          )
-        }
-      </section>
-      <hr className="mt-8 mb-8" />
-
-      <PlanLimitWarningBanner />
+                  </Link>
+                ) : (
+                  <div className="w-full md:w-fit flex flex-col items-end">
+                    <button
+                      disabled
+                      className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-gray-400 text-gray-200 cursor-not-allowed w-full md:w-fit px-4 py-2 gap-2"
+                      title={limitMessage}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create Portal
+                    </button>
+                    <p className="text-sm text-red-400 mt-1">{limitMessage}</p>
+                  </div>
+                )}
+              </div>
+            )
+          }
+        </section>
+      </TopNavigation>
+      <main className="w-full px-4 sm:px-6 lg:px-8 py-8">
+        <PlanLimitWarningBanner />
 
       {/* Portal Filters Section */}
       <section className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3 mb-6 w-full">
@@ -317,7 +319,7 @@ export default function AllPortalsPage() {
             )}
           </div>
         )}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-6">
           {loading && portals?.length === 0
             ? Array.from({ length: 8 }).map((_, i) => (
                 <PortalCardSkeleton key={i} />
@@ -343,9 +345,9 @@ export default function AllPortalsPage() {
                         ? "#FFA500"
                         : "#9E9E9E"
                   }
-                  clientName={`Client: ${portal.clientName}`}
-                  freelancerName={`Freelancer: ${portal.freelancerName}`}
-                  lastUpdated={`Last Updated: ${new Date(portal.updated_at).toLocaleDateString()}`}
+                  clientName={portal.clientName}
+                  freelancerName={portal.freelancerName}
+                  lastUpdated={new Date(portal.updated_at).toLocaleDateString()}
                   newUpdates={`${portal.updatesCount} New Updates`}
                   onShareLink={() => {}}
                   onView={() => router.push(`/portal/${portal.id}`)}
@@ -373,5 +375,6 @@ export default function AllPortalsPage() {
         )}
       </section>
     </main>
+    </div>
   );
 }

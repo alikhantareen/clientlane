@@ -46,13 +46,13 @@ export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
     );
   }
 
-  // Check if this is a dashboard page - if so, let the dashboard handle its own layout
-  const isDashboardPage = pathname === '/dashboard';
+  // Check if this is a dashboard, portal, or clients page - if so, let the page handle its own layout
+  const isCustomLayoutPage = pathname === '/dashboard' || pathname === '/portal' || pathname === '/clients';
 
   return (
     <UserProvider>
-      {isDashboardPage ? (
-        // Dashboard pages handle their own layout with TopNavigation
+      {isCustomLayoutPage ? (
+        // Dashboard, portal, and clients pages handle their own layout with TopNavigation
         children
       ) : (
         // Non-dashboard pages get the standard layout with TopNavigation

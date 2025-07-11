@@ -152,7 +152,7 @@ export default function LoginPage() {
               />
               <Label htmlFor="remember" className="text-gray-700">Remember me</Label>
             </div>
-            <Button type="submit" className="w-full bg-blue-600 text-white font-semibold text-lg py-3 rounded-md cursor-pointer" disabled={loading}>
+            <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-lg py-3 rounded-md cursor-pointer" disabled={loading}>
               {loading ? "Logging in..." : "Login"}
             </Button>
           </form>
