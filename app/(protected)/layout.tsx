@@ -1,17 +1,15 @@
 "use client";
-import { ReactNode, useState } from 'react'
-import Sidebar from '@/components/Sidebar'
-import Navbar from '@/components/Navbar'
+import { ReactNode } from 'react'
 import { UserProvider } from '@/lib/contexts/UserContext'
 import { usePathname } from 'next/navigation'
 import { useSession } from 'next-auth/react'
+import TopNavigation from '@/components/TopNavigation'
 
 interface ProtectedLayoutProps {
   children: ReactNode
 }
 
 export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname() || '';
   const { data: session, status } = useSession();
   const user = session?.user as any;
@@ -48,17 +46,23 @@ export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
     );
   }
 
+  // Check if this is a dashboard page - if so, let the dashboard handle its own layout
+  const isDashboardPage = pathname === '/dashboard';
+
   return (
     <UserProvider>
-      <div className="h-screen min-h-screen flex bg-gray-50">
-        <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} />
-        <div className="flex-1 flex flex-col min-w-0">
-          <Navbar setSidebarOpen={setSidebarOpen} />
-          <main className="flex-1 p-4 md:p-8 overflow-auto">
+      {isDashboardPage ? (
+        // Dashboard pages handle their own layout with TopNavigation
+        children
+      ) : (
+        // Non-dashboard pages get the standard layout with TopNavigation
+        <div className="min-h-screen bg-gray-50">
+          <TopNavigation />
+          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             {children}
           </main>
         </div>
-      </div>
+      )}
     </UserProvider>
   )
 } 

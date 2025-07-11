@@ -14,11 +14,14 @@ import {
   User,
   Activity,
   Upload,
-  Calendar
+  Calendar,
+  BarChart3,
+  Folder
 } from "lucide-react";
 import { Pagination } from "@/components/ui/Pagination";
 import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
+import { DashboardLayout } from "./DashboardLayout";
 
 interface ClientDashboardData {
   assignedPortals: {
@@ -179,13 +182,13 @@ export function ClientDashboard() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
-        return 'bg-green-100 text-green-800 border-green-200';
+        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
       case 'pending':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+        return 'bg-amber-50 text-amber-700 border-amber-200';
       case 'archived':
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'bg-gray-50 text-gray-700 border-gray-200';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'bg-gray-50 text-gray-700 border-gray-200';
     }
   };
 
@@ -198,304 +201,347 @@ export function ClientDashboard() {
   };
 
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">
-          Access your project portals and stay updated on progress.
-        </p>
-      </div>
-
-      <hr className="my-4" />
-
-      {/* Assigned Portals */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FolderOpen className="h-5 w-5" />
-            My Project Portals
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Portals you have access to
-          </p>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {data.assignedPortals.length > 0 ? (
-              data.assignedPortals.map((portal) => (
-                <div key={portal.id} className="flex items-center gap-4 p-4 border rounded-lg">
-                  <div className="flex-shrink-0">
-                    <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center">
-                      {portal.thumbnailUrl ? (
-                        <img 
-                          src={portal.thumbnailUrl} 
-                          alt={portal.name}
-                          className="w-full h-full object-cover rounded-lg"
-                        />
-                      ) : (
-                        <FolderOpen className="h-8 w-8 text-gray-400" />
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h4 className="font-semibold">{portal.name}</h4>
-                      <Badge className={getStatusColor(portal.status)}>
-                        {portal.status}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground mb-2">{portal.description}</p>
-                    <div className="flex items-center gap-2 mb-2">
-                      <Avatar className="h-6 w-6">
-                        <AvatarImage src={portal.freelancerImage} />
-                        <AvatarFallback>{portal.freelancerName.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      <span className="text-sm text-muted-foreground">{portal.freelancerName}</span>
-                    </div>
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <FileText className="h-3 w-3" />
-                        {portal.updateCount} updates
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Upload className="h-3 w-3" />
-                        {portal.fileCount} files
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {formatDistanceToNow(new Date(portal.lastUpdated), { addSuffix: true })}
-                      </span>
-                    </div>
-                  </div>
-                  <Link href={`/portal/${portal.id}`}>
-                    <Button variant="outline" size="sm" className="cursor-pointer">
-                      <Eye className="h-4 w-4 mr-2" />
-                      Open Portal
-                    </Button>
-                  </Link>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-muted-foreground">No portals assigned to you yet</p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Shared Files */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Upload className="h-5 w-5" />
-              Recent Files
-            </CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Files shared with you across all portals
-            </p>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {sectionLoading.files ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
-                </div>
-              ) : data.sharedFiles.length > 0 ? (
-                <>
-                  {data.sharedFiles.map((file) => (
-                    <div key={file.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
-                          <FileText className="h-4 w-4 text-blue-600" />
+    <DashboardLayout
+      type="client"
+      stats={{
+        assignedPortals: data.assignedPortals.length
+      }}
+      title="Dashboard"
+      subtitle="Access your project portals and stay updated on progress."
+    >
+      <div className="space-y-6">
+        {/* First Row: My Project Portals and Recent Files */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Project Portals */}
+          <Card className="border-0 shadow-xl">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <FolderOpen className="h-6 w-6" />
+                My Project Portals
+              </CardTitle>
+              <p className="text-sm text-gray-600">
+                Portals you have access to
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="h-96 flex flex-col">
+                {data.assignedPortals.length > 0 ? (
+                  <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+                    {data.assignedPortals.map((portal) => (
+                      <div key={portal.id} className="flex items-center gap-6 p-6 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+                        <div className="flex-shrink-0">
+                          <div className="w-20 h-20 bg-white rounded-xl shadow-sm flex items-center justify-center border">
+                            {portal.thumbnailUrl ? (
+                              <img 
+                                src={portal.thumbnailUrl} 
+                                alt={portal.name}
+                                className="w-full h-full object-cover rounded-xl"
+                              />
+                            ) : (
+                              <FolderOpen className="h-10 w-10 text-gray-400" />
+                            )}
+                          </div>
                         </div>
                         <div className="flex-1">
-                          <p className="text-sm font-medium">{file.fileName}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {file.portalName} • {formatFileSize(file.fileSize)}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {formatDistanceToNow(new Date(file.uploadedAt), { addSuffix: true })}
-                          </p>
+                          <div className="flex items-center gap-3 mb-2">
+                            <h4 className="text-lg font-semibold text-gray-900">{portal.name}</h4>
+                            <Badge className={getStatusColor(portal.status)}>
+                              {portal.status}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-gray-600 mb-3">{portal.description}</p>
+                          <div className="flex items-center gap-2 mb-3">
+                            <Avatar className="h-6 w-6">
+                              <AvatarImage src={portal.freelancerImage} />
+                              <AvatarFallback className="text-xs">{portal.freelancerName.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <span className="text-sm text-gray-600">{portal.freelancerName}</span>
+                          </div>
+                          <div className="flex items-center gap-6 text-xs text-gray-500">
+                            <span className="flex items-center gap-1">
+                              <FileText className="h-3 w-3" />
+                              {portal.updateCount} updates
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Upload className="h-3 w-3" />
+                              {portal.fileCount} files
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {formatDistanceToNow(new Date(portal.lastUpdated), { addSuffix: true })}
+                            </span>
+                          </div>
                         </div>
+                        <Link href={`/portal/${portal.id}`}>
+                          <Button className="gap-2 cursor-pointer">
+                            <Eye className="h-4 w-4" />
+                            Open Portal
+                          </Button>
+                        </Link>
                       </div>
-                      <a href={file.fileUrl} download>
-                        <Button variant="ghost" size="sm" className="cursor-pointer">
-                          <Download className="h-4 w-4" />
-                        </Button>
-                      </a>
-                    </div>
-                  ))}
-                  
-                  {data.pagination?.files && (
-                    <Pagination
-                      currentPage={data.pagination.files.currentPage}
-                      totalPages={data.pagination.files.totalPages}
-                      totalItems={data.pagination.files.totalItems}
-                      itemsPerPage={data.pagination.files.itemsPerPage}
-                      onPageChange={handleFilesPageChange}
-                    />
-                  )}
-                </>
-              ) : (
-                <p className="text-sm text-muted-foreground">No files shared yet</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Recent Updates */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Recent Updates
-            </CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Latest project updates from your portals
-            </p>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {sectionLoading.updates ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
-                </div>
-              ) : data.unreadUpdates.length > 0 ? (
-                <>
-                  {data.unreadUpdates.map((update) => (
-                    <div key={update.id} className="p-3 border rounded-lg">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-medium text-sm">{update.title}</h4>
-                        <span className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(new Date(update.createdAt), { addSuffix: true })}
-                        </span>
-                      </div>
-                      <p className="text-xs text-muted-foreground mb-2">
-                        {update.portalName} • by {update.authorName}
-                      </p>
-                      <div 
-                        className="text-sm text-muted-foreground line-clamp-2"
-                        dangerouslySetInnerHTML={{ __html: update.content }}
-                      />
-                    </div>
-                  ))}
-                  
-                  {data.pagination?.updates && (
-                    <Pagination
-                      currentPage={data.pagination.updates.currentPage}
-                      totalPages={data.pagination.updates.totalPages}
-                      totalItems={data.pagination.updates.totalItems}
-                      itemsPerPage={data.pagination.updates.itemsPerPage}
-                      onPageChange={handleUpdatesPageChange}
-                    />
-                  )}
-                </>
-              ) : (
-                <p className="text-sm text-muted-foreground">No recent updates</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Recent Activity */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5" />
-            Recent Activity
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Latest activity across your portals
-          </p>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {sectionLoading.activity ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
-              </div>
-            ) : data.recentActivity.length > 0 ? (
-              <>
-                {data.recentActivity.map((activity) => (
-                  <div key={activity.id} className="flex items-center gap-3 p-3 border rounded-lg">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback>{activity.userName.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <p className="text-sm">
-                        <span className="font-medium">{activity.userName}</span>{' '}
-                        {activity.message} in{' '}
-                        <span className="font-medium">{activity.portalName}</span>
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(new Date(activity.createdAt), { addSuffix: true })}
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center flex-1">
+                    <div className="text-center">
+                      <FolderOpen className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">No portals assigned yet</h3>
+                      <p className="text-sm text-gray-500">
+                        You'll see your project portals here once they're shared with you.
                       </p>
                     </div>
                   </div>
-                ))}
-                
-                {data.pagination?.activity && (
-                  <Pagination
-                    currentPage={data.pagination.activity.currentPage}
-                    totalPages={data.pagination.activity.totalPages}
-                    totalItems={data.pagination.activity.totalItems}
-                    itemsPerPage={data.pagination.activity.itemsPerPage}
-                    onPageChange={handleActivityPageChange}
-                  />
                 )}
-              </>
-            ) : (
-              <p className="text-sm text-muted-foreground">No recent activity</p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Recent Files */}
+          <Card className="border-0 shadow-xl">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <Upload className="h-5 w-5" />
+                Recent Files
+              </CardTitle>
+              <p className="text-sm text-gray-600">
+                Files shared with you across all portals
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="h-96 flex flex-col">
+                {sectionLoading.files ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  </div>
+                ) : data.sharedFiles.length > 0 ? (
+                  <>
+                    <div className="flex-1 overflow-y-auto space-y-3 pr-2">
+                      {data.sharedFiles.map((file) => (
+                        <div key={file.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                          <div className="flex items-center gap-3 flex-1">
+                            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                              <FileText className="h-5 w-5 text-blue-600" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-900 truncate">{file.fileName}</p>
+                              <p className="text-xs text-gray-500">
+                                {file.portalName} • {formatFileSize(file.fileSize)}
+                              </p>
+                              <p className="text-xs text-gray-400">
+                                {formatDistanceToNow(new Date(file.uploadedAt), { addSuffix: true })}
+                              </p>
+                            </div>
+                          </div>
+                          <a href={file.fileUrl} download>
+                            <Button variant="ghost" size="sm" className="gap-2 cursor-pointer">
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          </a>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {data.pagination?.files && (
+                      <div className="pt-4 border-t mt-4">
+                        <Pagination
+                          currentPage={data.pagination.files.currentPage}
+                          totalPages={data.pagination.files.totalPages}
+                          totalItems={data.pagination.files.totalItems}
+                          itemsPerPage={data.pagination.files.itemsPerPage}
+                          onPageChange={handleFilesPageChange}
+                        />
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="flex items-center justify-center flex-1">
+                    <div className="text-center">
+                      <Upload className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                      <p className="text-sm text-gray-500">No files shared yet</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Second Row: Recent Updates and Recent Activity */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Recent Updates */}
+          <Card className="border-0 shadow-xl">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <FileText className="h-5 w-5" />
+                Recent Updates
+              </CardTitle>
+              <p className="text-sm text-gray-600">
+                Latest project updates from your portals
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="h-96 flex flex-col">
+                {sectionLoading.updates ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  </div>
+                ) : data.unreadUpdates.length > 0 ? (
+                  <>
+                    <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+                      {data.unreadUpdates.map((update) => (
+                        <div key={update.id} className="p-4 bg-gray-50 rounded-lg">
+                          <div className="flex items-start justify-between mb-3">
+                            <h4 className="font-medium text-sm text-gray-900 flex-1">{update.title}</h4>
+                            <span className="text-xs text-gray-500 ml-2 flex-shrink-0">
+                              {formatDistanceToNow(new Date(update.createdAt), { addSuffix: true })}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-500 mb-2">
+                            {update.portalName} • by {update.authorName}
+                          </p>
+                          <div 
+                            className="text-sm text-gray-700 line-clamp-3"
+                            dangerouslySetInnerHTML={{ __html: update.content }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {data.pagination?.updates && (
+                      <div className="pt-4 border-t mt-4">
+                        <Pagination
+                          currentPage={data.pagination.updates.currentPage}
+                          totalPages={data.pagination.updates.totalPages}
+                          totalItems={data.pagination.updates.totalItems}
+                          itemsPerPage={data.pagination.updates.itemsPerPage}
+                          onPageChange={handleUpdatesPageChange}
+                        />
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="flex items-center justify-center flex-1">
+                    <div className="text-center">
+                      <FileText className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                      <p className="text-sm text-gray-500">No recent updates</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Recent Activity */}
+          <Card className="border-0 shadow-xl">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <Activity className="h-5 w-5" />
+                Recent Activity
+              </CardTitle>
+              <p className="text-sm text-gray-600">
+                Latest activity across your portals
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="h-96 flex flex-col">
+                {sectionLoading.activity ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  </div>
+                ) : data.recentActivity.length > 0 ? (
+                  <>
+                    <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+                      {data.recentActivity.map((activity) => (
+                        <div key={activity.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
+                          <Avatar className="h-10 w-10">
+                            <AvatarFallback className="bg-blue-100 text-blue-700">
+                              {activity.userName.charAt(0)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <p className="text-sm text-gray-900">
+                              <span className="font-medium">{activity.userName}</span>{' '}
+                              {activity.message} in{' '}
+                              <span className="font-medium">{activity.portalName}</span>
+                            </p>
+                            <p className="text-xs text-gray-500 mt-1">
+                              {formatDistanceToNow(new Date(activity.createdAt), { addSuffix: true })}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {data.pagination?.activity && (
+                      <div className="pt-4 border-t mt-4">
+                        <Pagination
+                          currentPage={data.pagination.activity.currentPage}
+                          totalPages={data.pagination.activity.totalPages}
+                          totalItems={data.pagination.activity.totalItems}
+                          itemsPerPage={data.pagination.activity.itemsPerPage}
+                          onPageChange={handleActivityPageChange}
+                        />
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="flex items-center justify-center flex-1">
+                    <div className="text-center">
+                      <Activity className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                      <p className="text-sm text-gray-500">No recent activity</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </DashboardLayout>
   );
 }
 
 function ClientDashboardSkeleton() {
   return (
-    <div className="flex flex-col gap-6">
-      <div className="space-y-2">
-        <div className="h-8 w-48 bg-gray-200 rounded animate-pulse" />
-        <div className="h-4 w-96 bg-gray-200 rounded animate-pulse" />
-      </div>
+    <DashboardLayout
+      type="client"
+      stats={{
+        assignedPortals: 0
+      }}
+      title="Dashboard"
+      subtitle="Loading your dashboard..."
+    >
+      <div className="space-y-6">
+        {/* First Row: My Project Portals and Recent Files */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {[...Array(2)].map((_, i) => (
+            <Card key={i} className="border-0 shadow-xl">
+              <CardHeader>
+                <div className="h-6 w-48 bg-gray-200 rounded animate-pulse mb-2" />
+                <div className="h-4 w-64 bg-gray-200 rounded animate-pulse" />
+              </CardHeader>
+              <CardContent>
+                <div className="h-96 bg-gray-200 rounded animate-pulse" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
 
-      <Card>
-        <CardHeader>
-          <div className="h-6 w-48 bg-gray-200 rounded animate-pulse" />
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="flex items-center gap-4 p-4 border rounded-lg">
-                <div className="w-16 h-16 bg-gray-200 rounded animate-pulse" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-4 w-32 bg-gray-200 rounded animate-pulse" />
-                  <div className="h-3 w-48 bg-gray-200 rounded animate-pulse" />
-                  <div className="h-3 w-24 bg-gray-200 rounded animate-pulse" />
-                </div>
-                <div className="h-8 w-24 bg-gray-200 rounded animate-pulse" />
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid gap-6 md:grid-cols-2">
-        {[...Array(2)].map((_, i) => (
-          <Card key={i}>
-            <CardHeader>
-              <div className="h-6 w-32 bg-gray-200 rounded animate-pulse" />
-            </CardHeader>
-            <CardContent>
-              <div className="h-48 bg-gray-200 rounded animate-pulse" />
-            </CardContent>
-          </Card>
-        ))}
+        {/* Second Row: Recent Updates and Recent Activity */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {[...Array(2)].map((_, i) => (
+            <Card key={i} className="border-0 shadow-xl">
+              <CardHeader>
+                <div className="h-6 w-32 bg-gray-200 rounded animate-pulse mb-2" />
+                <div className="h-4 w-48 bg-gray-200 rounded animate-pulse" />
+              </CardHeader>
+              <CardContent>
+                <div className="h-96 bg-gray-200 rounded animate-pulse" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 } 
