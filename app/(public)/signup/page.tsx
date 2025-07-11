@@ -72,7 +72,21 @@ export default function SignupPage() {
     });
     setLoading(false);
     if (res.ok) {
-      toast.success("A 6-digit verification code has been sent to your email. Please enter it below to verify your account.", { duration: 7000 });
+      // Send OTP email after successful registration
+      try {
+        const otpRes = await fetch("/api/auth/send-otp", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: form.email }),
+        });
+        if (otpRes.ok) {
+          toast.success("A 6-digit verification code has been sent to your email. Please enter it below to verify your account.", { duration: 7000 });
+        } else {
+          toast.error("Failed to send verification code email. Please use 'Resend OTP' on the next page.");
+        }
+      } catch (err) {
+        toast.error("Failed to send verification code email. Please use 'Resend OTP' on the next page.");
+      }
       router.push(`/otp?email=${encodeURIComponent(form.email)}&source=signup`);
       setForm({ name: "", email: "", password: "", confirmPassword: "", role: "freelancer" });
     } else {

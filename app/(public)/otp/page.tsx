@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +27,47 @@ export default function OtpPage() {
   const [source, setSource] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const router = useRouter();
+  const [cooldown, setCooldown] = useState(0); // seconds left
+  const cooldownRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Helper to get localStorage key for cooldown per email
+  const getCooldownKey = (email: string | null) =>
+    email ? `otp_resend_cooldown_${email}` : "otp_resend_cooldown";
+
+  // On mount, restore cooldown from localStorage if present
+  useEffect(() => {
+    if (email) {
+      const key = getCooldownKey(email);
+      const until = localStorage.getItem(key);
+      if (until) {
+        const seconds = Math.floor((parseInt(until) - Date.now()) / 1000);
+        if (seconds > 0) setCooldown(seconds);
+      }
+    }
+    return () => {
+      if (cooldownRef.current) clearInterval(cooldownRef.current);
+    };
+    // eslint-disable-next-line
+  }, [email]);
+
+  // Start countdown if cooldown > 0
+  useEffect(() => {
+    if (cooldown > 0) {
+      cooldownRef.current = setInterval(() => {
+        setCooldown((prev) => {
+          if (prev <= 1) {
+            if (email) localStorage.removeItem(getCooldownKey(email));
+            if (cooldownRef.current) clearInterval(cooldownRef.current);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => {
+        if (cooldownRef.current) clearInterval(cooldownRef.current);
+      };
+    }
+  }, [cooldown, email]);
 
   useEffect(() => {
     const emailParam = searchParams?.get("email") || null;
@@ -103,6 +144,9 @@ export default function OtpPage() {
       });
       if (res.ok) {
         toast.success("A new 6-digit verification code has been sent to your email.");
+        // Start cooldown
+        setCooldown(60);
+        localStorage.setItem(getCooldownKey(email), (Date.now() + 60000).toString());
       } else {
         toast.error("Failed to resend OTP. Please try again.");
       }
@@ -134,11 +178,15 @@ export default function OtpPage() {
                   <span>Didn't receive the code?</span>
                   <button
                     type="button"
-                    className="text-black font-bold hover:underline cursor-pointer"
+                    className="text-black font-bold hover:underline cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={handleResend}
-                    disabled={resending || !email}
+                    disabled={resending || !email || cooldown > 0}
                   >
-                    {resending ? "Resending..." : "Resend OTP"}
+                    {resending
+                      ? "Resending..."
+                      : cooldown > 0
+                        ? `Resend OTP (${cooldown}s)`
+                        : "Resend OTP"}
                   </button>
                 </>
               )}
@@ -148,11 +196,15 @@ export default function OtpPage() {
                 <span>Didn't receive the code?</span>
                 <button
                   type="button"
-                  className="text-black font-bold hover:underline cursor-pointer"
+                  className="text-black font-bold hover:underline cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={handleResend}
-                  disabled={resending || !email}
+                  disabled={resending || !email || cooldown > 0}
                 >
-                  {resending ? "Resending..." : "Resend OTP"}
+                  {resending
+                    ? "Resending..."
+                    : cooldown > 0
+                      ? `Resend OTP (${cooldown}s)`
+                      : "Resend OTP"}
                 </button>
               </div>
             )}
