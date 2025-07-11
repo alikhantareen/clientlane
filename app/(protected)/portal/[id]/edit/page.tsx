@@ -350,7 +350,7 @@ export default function EditPortalPage() {
         <div className="md:col-span-2">
           <Button
             type="submit"
-            className="w-full bg-black text-white hover:bg-gray-800 cursor-pointer disabled:cursor-not-allowed"
+            className="w-full bg-blue-600 text-white hover:bg-blue-700 cursor-pointer disabled:cursor-not-allowed"
             disabled={loading}
           >
             {loading ? "Updating Portal..." : "Update Portal"}

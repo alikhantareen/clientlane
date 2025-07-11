@@ -291,7 +291,7 @@ export default function SettingsPage() {
               </div>
               <label
                 htmlFor="image"
-                className="absolute bottom-0 right-0 bg-black text-white p-1.5 rounded-full cursor-pointer hover:bg-gray-800 transition-colors"
+                                    className="absolute bottom-0 right-0 bg-blue-600 text-white p-1.5 rounded-full cursor-pointer hover:bg-blue-700 transition-colors"
               >
                 <Camera className="w-4 h-4" />
               </label>
@@ -373,7 +373,7 @@ export default function SettingsPage() {
             
             <Button 
               type="submit" 
-              className="bg-black text-white hover:bg-gray-800 gap-2 cursor-pointer disabled:cursor-not-allowed"
+              className="bg-blue-600 text-white hover:bg-blue-700 gap-2 cursor-pointer disabled:cursor-not-allowed"
               disabled={loading || !hasProfileChanges()}
             >
               {loading ? (
@@ -423,7 +423,7 @@ export default function SettingsPage() {
               <Button 
                 onClick={handleVerifyPassword}
                 disabled={!passwordForm.currentPassword || passwordLoading}
-                className="bg-black text-white hover:bg-gray-800 gap-2 w-fit cursor-pointer disabled:cursor-not-allowed"
+                className="bg-blue-600 text-white hover:bg-blue-700 gap-2 w-fit cursor-pointer disabled:cursor-not-allowed"
               >
                 {passwordLoading ? (
                   "Verifying..."
@@ -487,7 +487,7 @@ export default function SettingsPage() {
                 <Button 
                   onClick={handleUpdatePassword}
                   disabled={!passwordForm.newPassword || !passwordForm.confirmPassword || passwordLoading}
-                  className="bg-black text-white hover:bg-gray-800 gap-2 cursor-pointer disabled:cursor-not-allowed"
+                  className="bg-blue-600 text-white hover:bg-blue-700 gap-2 cursor-pointer disabled:cursor-not-allowed"
                 >
                   {passwordLoading ? (
                     "Updating..."

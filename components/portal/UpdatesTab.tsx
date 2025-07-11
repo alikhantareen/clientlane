@@ -251,7 +251,7 @@ export function UpdatesTab({ portalId }: UpdatesTabProps) {
           <div className="flex-shrink-0">
             <Button
               onClick={handleAddUpdate}
-              className="bg-black text-white hover:bg-gray-800 px-4 py-2 rounded-lg flex items-center gap-2 w-full sm:w-auto cursor-pointer"
+              className="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-lg flex items-center gap-2 w-full sm:w-auto cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>Add Update</span>
@@ -418,7 +418,7 @@ export function UpdatesTab({ portalId }: UpdatesTabProps) {
                   </p>
                   <Button
                     onClick={handleAddUpdate}
-                    className="bg-black text-white hover:bg-gray-800 cursor-pointer"
+                    className="bg-blue-600 text-white hover:bg-blue-700 cursor-pointer"
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     Add Update

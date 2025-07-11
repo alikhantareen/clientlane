@@ -843,7 +843,7 @@ export default function UpdateDetailsPage() {
                 <Button
                   type="submit"
                   disabled={!replyEditor?.getHTML().trim() || isSubmitting}
-                  className={`px-4 py-2 rounded-lg flex items-center gap-2 bg-black text-white hover:bg-gray-800 cursor-pointer`}
+                  className={`px-4 py-2 rounded-lg flex items-center gap-2 bg-blue-600 text-white hover:bg-blue-700 cursor-pointer`}
                 >
                   {isSubmitting ? (
                     <Loader2 className="w-4 h-4 animate-spin" />

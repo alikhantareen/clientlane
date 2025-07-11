@@ -80,7 +80,7 @@ export default function ResetPasswordPage() {
     <div className="min-h-screen flex items-center justify-center bg-white">
       <div className="flex w-full max-w-5xl shadow-lg rounded-lg overflow-hidden">
         {/* Right Card (Branding) */}
-        <div className="hidden md:flex flex-col justify-center items-start bg-black text-white w-1/2 p-12">
+        <div className="hidden md:flex flex-col justify-center items-start bg-slate-900 text-white w-1/2 p-12">
           <h1 className="text-5xl font-bold mb-4 text-left">Clientlane</h1>
           <p className="text-2xl font-light text-left">Everything your client needs<br/>in one portal.</p>
         </div>
@@ -140,7 +140,7 @@ export default function ResetPasswordPage() {
                 </button>
               </div>
             </div>
-            <Button type="submit" className="w-full bg-black text-white font-semibold text-lg py-3 rounded-md" disabled={loading}>
+            <Button type="submit" className="w-full bg-blue-600 text-white font-semibold text-lg py-3 rounded-md" disabled={loading}>
               {loading ? "Setting..." : "Set Password"}
             </Button>
           </form>

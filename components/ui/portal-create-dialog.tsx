@@ -116,7 +116,7 @@ export default function PortalCreateDialog() {
         <div className="w-full md:w-fit">
           <Button 
             disabled={!canCreatePortal}
-            className="bg-black text-white hover:bg-gray-800 hover:text-white cursor-pointer w-full md:w-fit disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-blue-600 text-white hover:bg-blue-700 hover:text-white cursor-pointer w-full md:w-fit disabled:opacity-50 disabled:cursor-not-allowed"
             title={!canCreatePortal ? limitMessage : "Create a new portal"}
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -189,7 +189,7 @@ export default function PortalCreateDialog() {
             <Textarea id="welcomeNote" name="welcomeNote" placeholder="Welcome message for your client..." value={form.welcomeNote} onChange={handleChange} />
           </div>
           <DialogFooter>
-            <Button type="submit" className="w-full bg-black text-white hover:bg-gray-800" disabled={loading}>
+            <Button type="submit" className="w-full bg-blue-600 text-white hover:bg-blue-700" disabled={loading}>
               {loading ? "Creating..." : "Create Portal"}
             </Button>
           </DialogFooter>

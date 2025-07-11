@@ -105,7 +105,7 @@ export function PortalCard({
           </Button>
         )}
         <Button
-          className="flex-1 sm:min-w-[100px] h-7 sm:h-[28px] rounded-[5px] border border-[#9E9E9E] bg-black text-white text-xs sm:text-[14px] font-bold px-2 sm:px-3 hover:bg-gray-800 transition-colors cursor-pointer"
+          className="flex-1 sm:min-w-[100px] h-7 sm:h-[28px] rounded-[5px] border border-[#9E9E9E] bg-blue-600 text-white text-xs sm:text-[14px] font-bold px-2 sm:px-3 hover:bg-blue-700 transition-colors cursor-pointer"
           onClick={onView}
         >
           {viewLabel}

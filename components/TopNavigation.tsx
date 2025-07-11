@@ -428,7 +428,7 @@ export default function TopNavigation({ children }: TopNavigationProps) {
           </DialogHeader>
           <DialogFooter>
             <DialogPrimitive.Close asChild>
-              <Button variant="outline" onClick={() => setShowLogoutDialog(false)}>
+              <Button variant="outline" onClick={() => setShowLogoutDialog(false)} className="cursor-pointer">
                 Cancel
               </Button>
             </DialogPrimitive.Close>
@@ -438,6 +438,7 @@ export default function TopNavigation({ children }: TopNavigationProps) {
                 setShowLogoutDialog(false);
                 signOut({ callbackUrl: "/login" });
               }}
+              className="cursor-pointer"
             >
               Log out
             </Button>

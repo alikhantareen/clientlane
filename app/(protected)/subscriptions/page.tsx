@@ -245,7 +245,7 @@ export default function SubscriptionsPage() {
                 <Button
                   onClick={() => handleSubscribe(plan.id)}
                   disabled={loading === plan.id || isCurrentPlan}
-                  className={`w-full rounded-md text-sm font-medium px-4 py-2 cursor-pointer bg-black text-white hover:bg-gray-800`}
+                  className={`w-full rounded-md text-sm font-medium px-4 py-2 cursor-pointer bg-blue-600 text-white hover:bg-blue-700`}
                 >
                   {loading === plan.id ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
