@@ -198,7 +198,7 @@ export function FreelancerDashboard() {
                         <div className="flex items-center gap-3 mb-2">
                           <h4 className="font-semibold text-gray-900">{portal.name}</h4>
                           <Badge className={getStatusColor(portal.status)}>
-                            {portal.status}
+                            {portal.status.charAt(0).toUpperCase() + portal.status.slice(1)}
                           </Badge>
                         </div>
                         <p className="text-sm text-gray-600 mb-2">{portal.clientName}</p>
@@ -225,12 +225,6 @@ export function FreelancerDashboard() {
                   <div className="text-center py-8">
                     <FolderOpen className="h-12 w-12 text-gray-300 mx-auto mb-4" />
                     <p className="text-sm text-gray-500">No portals created yet</p>
-                    <Link href="/portal/create">
-                      <Button className="mt-4 gap-2 cursor-pointer">
-                        <Plus className="h-4 w-4" />
-                        Create Your First Portal
-                      </Button>
-                    </Link>
                   </div>
                 )}
               </div>

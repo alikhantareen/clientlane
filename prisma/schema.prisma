@@ -87,6 +87,9 @@ model Portal {
   client_id     String
   created_at    DateTime        @default(now())
   updated_at    DateTime        @default(now())
+  tags          String?
+  dueDate       String?
+  welcomeNote   String?
   // Relations
   freelancer    User            @relation("FreelancerPortals", fields: [created_by], references: [id])
   client        User            @relation("ClientPortals", fields: [client_id], references: [id])

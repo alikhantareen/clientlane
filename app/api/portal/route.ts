@@ -160,6 +160,9 @@ export async function POST(req: NextRequest) {
           thumbnail_url,
           created_by: createdBy,
           client_id: client.id,
+          tags: Array.isArray(tags) ? tags.join(',') : tags || '',
+          dueDate: dueDate || '',
+          welcomeNote: welcomeNote || '',
         },
       });
 

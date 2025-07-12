@@ -21,6 +21,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { PlanLimitWarningBanner } from "@/components/ui";
 import TopNavigation from "@/components/TopNavigation";
+import { PortalCreateDialog } from "@/components/ui";
 
 export default function AllPortalsPage() {
   const { data: session } = useSession();
@@ -42,6 +43,7 @@ export default function AllPortalsPage() {
   const [hasEverLoadedPortals, setHasEverLoadedPortals] = useState<
     boolean | null
   >(null);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   // Fetch total portals on mount to determine if any exist
   useEffect(() => {
@@ -169,6 +171,11 @@ export default function AllPortalsPage() {
     !anyFilterApplied &&
     hasEverLoadedPortals === false;
 
+  const handlePortalCreated = () => {
+    fetchPortals(1, true);
+    setCreateDialogOpen(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <TopNavigation>
@@ -182,27 +189,11 @@ export default function AllPortalsPage() {
           {
             user?.role === "freelancer" && (
               <div className="w-full md:w-fit flex flex-col items-end">
-                {canCreatePortal ? (
-                  <Link
-                    href="/portal/create"
-                    className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 hover:text-white cursor-pointer w-full md:w-fit px-4 py-2 gap-2"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create Portal
-                  </Link>
-                ) : (
-                  <div className="w-full md:w-fit flex flex-col items-end">
-                    <button
-                      disabled
-                      className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-gray-400 text-gray-200 cursor-not-allowed w-full md:w-fit px-4 py-2 gap-2"
-                      title={limitMessage}
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Create Portal
-                    </button>
-                    <p className="text-sm text-red-400 mt-1">{limitMessage}</p>
-                  </div>
-                )}
+                <PortalCreateDialog
+                  open={createDialogOpen}
+                  onOpenChange={setCreateDialogOpen}
+                  onPortalCreated={handlePortalCreated}
+                />
               </div>
             )
           }
@@ -291,38 +282,16 @@ export default function AllPortalsPage() {
               You don't have any portals yet. Click below to create your first
               portal.
             </div>
-            {canCreatePortal ? (
-              <Link
-                href="/portal/create"
-                className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 hover:text-white px-6 py-2 gap-2"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Create Portal
-              </Link>
-            ) : (
-              <div className="text-center">
-                <button
-                  disabled
-                  className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-gray-400 text-gray-200 cursor-not-allowed px-6 py-2 gap-2"
-                  title={limitMessage}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create Portal
-                </button>
-                <p className="text-sm text-red-600 mt-2">{limitMessage}</p>
-                <Link
-                  href="/subscriptions"
-                  className="text-sm text-blue-600 hover:text-blue-800 underline"
-                >
-                  Upgrade your plan
-                </Link>
-              </div>
-            )}
+            <PortalCreateDialog
+              open={createDialogOpen}
+              onOpenChange={setCreateDialogOpen}
+              onPortalCreated={handlePortalCreated}
+            />
           </div>
         )}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-6">
           {loading && portals?.length === 0
-            ? Array.from({ length: 8 }).map((_, i) => (
+            ? Array.from({ length: 10 }).map((_, i) => (
                 <PortalCardSkeleton key={i} />
               ))
             : portals?.map((portal) => (

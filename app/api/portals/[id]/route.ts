@@ -129,6 +129,9 @@ export async function GET(
       initials: user.role === "freelancer" 
         ? portal.client.name.split(' ').map(word => word[0]).join('').toUpperCase() || 'C'
         : portal.freelancer.name.split(' ').map(word => word[0]).join('').toUpperCase() || 'F',
+      tags: portal.tags || "",
+      dueDate: portal.dueDate || "",
+      welcomeNote: portal.welcomeNote || "",
     };
 
     return NextResponse.json({ portal: portalData });
@@ -247,6 +250,9 @@ export async function PUT(
     if (updateData.description !== undefined) portalUpdateData.description = updateData.description;
     if (updateData.status) portalUpdateData.status = updateData.status;
     if (thumbnail_url !== existingPortal.thumbnail_url) portalUpdateData.thumbnail_url = thumbnail_url;
+    if (updateData.tags !== undefined) portalUpdateData.tags = Array.isArray(updateData.tags) ? updateData.tags.join(',') : updateData.tags;
+    if (updateData.dueDate !== undefined) portalUpdateData.dueDate = updateData.dueDate;
+    if (updateData.welcomeNote !== undefined) portalUpdateData.welcomeNote = updateData.welcomeNote;
 
     // Handle client update if email changed
     let updatedClient = existingPortal.client;
@@ -323,6 +329,9 @@ export async function PUT(
         ...updatedPortal,
         commentsCount: 0, // We could calculate this if needed
         initials: updatedPortal.name.split(' ').map(word => word[0]).join('').toUpperCase() || 'P',
+        tags: (updatedPortal as any).tags || '',
+        dueDate: (updatedPortal as any).dueDate || '',
+        welcomeNote: (updatedPortal as any).welcomeNote || '',
       }
     });
 

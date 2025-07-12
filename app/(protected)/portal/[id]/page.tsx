@@ -22,6 +22,9 @@ import {
 } from "@/components/portal";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
+import PortalCreateDialog, {
+  PortalFormValues,
+} from "@/components/ui/portal-create-dialog";
 
 interface PortalData {
   id: string;
@@ -48,6 +51,9 @@ interface PortalData {
   updated_at: string;
   commentsCount: number;
   initials: string;
+  tags: string;
+  dueDate: string;
+  welcomeNote: string;
 }
 
 export default function PortalDetailPage() {
@@ -58,6 +64,7 @@ export default function PortalDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
   const { data: session } = useSession();
   const user = session?.user as any;
 
@@ -88,7 +95,7 @@ export default function PortalDetailPage() {
   };
 
   const handleEdit = () => {
-    router.push(`/portal/${id}/edit`);
+    setEditModalOpen(true);
   };
 
   const handleDeleteClick = () => {
@@ -258,10 +265,9 @@ export default function PortalDetailPage() {
                     </span>
                   </div>
                   <span className="text-xs text-gray-500 mt-1 text-center">
-                    {user?.role === "freelancer" 
+                    {user?.role === "freelancer"
                       ? portal.client.name.split(" ")[0]
-                      : portal.freelancer.name.split(" ")[0]
-                    }
+                      : portal.freelancer.name.split(" ")[0]}
                   </span>
                 </div>
               </div>
@@ -297,8 +303,8 @@ export default function PortalDetailPage() {
         {/* Tab Content */}
         <div className="p-4 sm:p-6">
           {activeTab === "overview" && (
-            <OverviewTab 
-              portal={portal} 
+            <OverviewTab
+              portal={portal}
               onEdit={handleEdit}
               onDelete={handleDeleteClick}
             />
@@ -315,6 +321,26 @@ export default function PortalDetailPage() {
         onClose={() => setDeleteModalOpen(false)}
         portal={portal}
         onDelete={handleDelete}
+      />
+
+      <PortalCreateDialog
+        open={editModalOpen}
+        onOpenChange={() => {
+          setEditModalOpen(false);
+        }}
+        initialValues={{
+          portalName: portal.name,
+          clientEmail: portal.client.email,
+          clientName: portal.client.name,
+          portalDescription: portal.description,
+          status: portal.status,
+          tags: portal.tags || "",
+          dueDate: portal.dueDate || "",
+          welcomeNote: portal.welcomeNote || "",
+          thumbnail_url: portal.thumbnail_url || "",
+        }}
+        portalId={portal.id}
+        onSuccess={fetchPortalData}
       />
     </div>
   );
