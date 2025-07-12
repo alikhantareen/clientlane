@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, Check, X, ExternalLink } from "lucide-react";
+import { Bell, Check, ExternalLink, RefreshCcw } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
+import TopNavigation from "@/components/TopNavigation";
 
 interface Notification {
   id: string;
@@ -223,132 +224,141 @@ export default function NotificationsPage() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Notifications</h1>
-            <p className="text-gray-600">Loading your notifications...</p>
+      <div className="min-h-screen bg-gray-50">
+        <TopNavigation>
+          <section className="flex flex-col gap-4 justify-between w-full md:flex-row md:gap-4 items-start md:items-center py-8">
+            <div className="flex flex-col">
+              <h1 className="text-2xl font-bold md:text-3xl text-white">Notifications</h1>
+              <p className="text-gray-300 mt-2">Loading your notifications...</p>
+            </div>
+          </section>
+        </TopNavigation>
+        <main className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="space-y-4">
+            {[...Array(3)].map((_, i) => (
+              <Card key={i} className="animate-pulse">
+                <CardHeader>
+                  <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                  <div className="h-3 bg-gray-200 rounded w-1/2 mt-2"></div>
+                </CardHeader>
+              </Card>
+            ))}
           </div>
-        </div>
-        <div className="space-y-4">
-          {[...Array(3)].map((_, i) => (
-            <Card key={i} className="animate-pulse">
-              <CardHeader>
-                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                <div className="h-3 bg-gray-200 rounded w-1/2 mt-2"></div>
-              </CardHeader>
-            </Card>
-          ))}
-        </div>
+        </main>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Notifications</h1>
-          <p className="text-gray-600">
-            Stay updated with your latest activity and updates
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button 
-            onClick={() => fetchNotifications(1, false)} 
-            variant="ghost" 
-            size="sm"
-            className="cursor-pointer"
-          >
-            Refresh
-          </Button>
-          {unreadCount > 0 && (
-            <Button onClick={markAllAsRead} variant="outline" className="cursor-pointer">
-              Mark all as read
+    <div className="min-h-screen bg-gray-50">
+      <TopNavigation>
+        <section className="flex flex-col gap-4 justify-between w-full md:flex-row md:gap-4 items-start md:items-center py-8">
+          <div className="flex flex-col">
+            <h1 className="text-2xl font-bold md:text-3xl text-white">Notifications</h1>
+            <p className="text-gray-300 mt-2">
+              Stay updated with your latest activity and updates
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button 
+              onClick={() => fetchNotifications(1, false)} 
+              variant="ghost" 
+              size="sm"
+              className="cursor-pointer text-gray-300 hover:text-white hover:bg-slate-800"
+            >
+              <RefreshCcw className="w-4 h-4" />
+              Refresh
             </Button>
-          )}
+            {unreadCount > 0 && (
+              <Button onClick={markAllAsRead} variant="outline" className="cursor-pointer text-gray-300 border-gray-300 hover:bg-slate-800 hover:text-white">
+                Mark all as read
+              </Button>
+            )}
+          </div>
+        </section>
+      </TopNavigation>
+
+      <main className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex items-center gap-2 mb-6">
+          <Bell className="w-5 h-5 text-gray-500" />
+          <span className="text-sm text-gray-600">
+            {unreadCount > 0 ? `${unreadCount} unread notifications` : "All notifications read"}
+          </span>
         </div>
-      </div>
 
-      <div className="flex items-center gap-2 mb-6">
-        <Bell className="w-5 h-5 text-gray-500" />
-        <span className="text-sm text-gray-600">
-          {unreadCount > 0 ? `${unreadCount} unread notifications` : "All notifications read"}
-        </span>
-      </div>
-
-      <div className="space-y-4">
-        {notifications.length === 0 ? (
-          <Card>
-            <CardContent className="text-center py-8">
-              <Bell className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500">No notifications yet</p>
-            </CardContent>
-          </Card>
-        ) : (
-          <>
-            {notifications.map((notification) => (
-              <Card 
-                key={notification.id} 
-                className={`cursor-pointer transition-all hover:shadow-md ${
-                  !notification.is_read ? 'bg-blue-50 border-blue-200' : ''
-                }`}
-                onClick={() => handleNotificationClick(notification)}
-              >
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-lg">{getNotificationTypeIcon(notification.type)}</span>
-                        <CardTitle className="text-base font-medium">{notification.message}</CardTitle>
+        <div className="space-y-4">
+          {notifications.length === 0 ? (
+            <Card>
+              <CardContent className="text-center py-8">
+                <Bell className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500">No notifications yet</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              {notifications.map((notification) => (
+                <Card 
+                  key={notification.id} 
+                  className={`cursor-pointer transition-all hover:shadow-md ${
+                    !notification.is_read ? 'bg-blue-50 border-blue-200' : ''
+                  }`}
+                  onClick={() => handleNotificationClick(notification)}
+                >
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-lg">{getNotificationTypeIcon(notification.type)}</span>
+                          <CardTitle className="text-base font-medium">{notification.message}</CardTitle>
+                          {!notification.is_read && (
+                            <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                              New
+                            </Badge>
+                          )}
+                        </div>
+                        <CardDescription className="text-sm">
+                          {notification.portal.name}
+                        </CardDescription>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <ExternalLink className="w-4 h-4 text-gray-400" />
                         {!notification.is_read && (
-                          <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                            New
-                          </Badge>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              markAsRead(notification.id);
+                            }}
+                            className="text-blue-600 hover:bg-blue-100"
+                          >
+                            <Check className="w-4 h-4" />
+                          </Button>
                         )}
                       </div>
-                      <CardDescription className="text-sm">
-                        {notification.portal.name}
-                      </CardDescription>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
-                      </p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <ExternalLink className="w-4 h-4 text-gray-400" />
-                      {!notification.is_read && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            markAsRead(notification.id);
-                          }}
-                          className="text-blue-600 hover:bg-blue-100"
-                        >
-                          <Check className="w-4 h-4" />
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </CardHeader>
-              </Card>
-            ))}
-            
-            {hasMore && (
-              <div className="text-center py-4">
-                <Button
-                  onClick={loadMore}
-                  disabled={loadingMore}
-                  variant="outline"
-                >
-                  {loadingMore ? "Loading..." : "Load More"}
-                </Button>
-              </div>
-            )}
-          </>
-        )}
-      </div>
+                  </CardHeader>
+                </Card>
+              ))}
+              
+              {hasMore && (
+                <div className="text-center py-4">
+                  <Button
+                    onClick={loadMore}
+                    disabled={loadingMore}
+                    variant="outline"
+                  >
+                    {loadingMore ? "Loading..." : "Load More"}
+                  </Button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </main>
     </div>
   );
 } 

@@ -63,19 +63,19 @@ export function OverviewTab({ portal, onEdit, onDelete }: OverviewTabProps) {
           {user?.role === "freelancer" ? (
             <>
               <p className="text-sm text-gray-600">
-                Name: {portal.client.name}
+                <span className="font-medium text-gray-900">Name:</span> {portal.client.name}
               </p>
               <p className="text-sm text-gray-600">
-                Email: {portal.client.email}
+                <span className="font-medium text-gray-900">Email:</span> {portal.client.email}
               </p>
             </>
           ) : (
             <>
               <p className="text-sm text-gray-600">
-                Name: {portal.freelancer.name}
+                <span className="font-medium text-gray-900">Name:</span> {portal.freelancer.name}
               </p>
               <p className="text-sm text-gray-600">
-                Email: {portal.freelancer.email}
+                <span className="font-medium text-gray-900">Email:</span> {portal.freelancer.email}
               </p>
             </>
           )}
@@ -83,10 +83,10 @@ export function OverviewTab({ portal, onEdit, onDelete }: OverviewTabProps) {
         <div className="bg-gray-50 p-4 rounded-lg">
           <h4 className="font-medium text-gray-900 mb-2">Portal Stats</h4>
           <p className="text-sm text-gray-600">
-            Updates: {portal.updates.length}
+            <span className="font-medium text-gray-900">Updates:</span> {portal.updates.length}
           </p>
           <p className="text-sm text-gray-600">
-            Shared Links: {portal.shared_links.length}
+            <span className="font-medium text-gray-900">Shared Links:</span> {portal.shared_links.length}
           </p>
         </div>
       </div>

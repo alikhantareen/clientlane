@@ -46,8 +46,8 @@ export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
     );
   }
 
-  // Check if this is a dashboard, portal, or clients page - if so, let the page handle its own layout
-  const isCustomLayoutPage = pathname === '/dashboard' || pathname === '/portal' || pathname === '/clients';
+  // Check if this is a dashboard, portal, clients, or notifications page - if so, let the page handle its own layout
+  const isCustomLayoutPage = pathname === '/dashboard' || pathname === '/portal' || pathname === '/clients' || pathname === '/notifications' || /^\/portal\/[^/]+$/.test(pathname);
 
   return (
     <UserProvider>
