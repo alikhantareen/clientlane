@@ -38,6 +38,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
+import logo from '@/public/icons/lightTransparentLogo.png'
 
 const freelancerLinks = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
@@ -191,7 +192,7 @@ export default function TopNavigation({ children }: TopNavigationProps) {
               {/* Logo */}
               <div className="flex items-center">
                 <Link href="/dashboard" className="flex items-center">
-                  <span className="text-2xl font-bold text-white">Clientlane</span>
+                  <Image src={logo} alt="Clientlane" width={150} height={150}/>
                 </Link>
               </div>
 
@@ -440,6 +441,7 @@ export default function TopNavigation({ children }: TopNavigationProps) {
               }}
               className="cursor-pointer"
             >
+              <LogOut className="w-4 h-4 mr-2" />
               Log out
             </Button>
           </DialogFooter>

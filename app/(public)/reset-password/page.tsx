@@ -77,75 +77,65 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white">
-      <div className="flex w-full max-w-5xl shadow-lg rounded-lg overflow-hidden">
-        {/* Right Card (Branding) */}
-        <div className="hidden md:flex flex-col justify-center items-start bg-slate-900 text-white w-1/2 p-12">
-          <h1 className="text-5xl font-bold mb-4 text-left">Clientlane</h1>
-          <p className="text-2xl font-light text-left">Everything your client needs<br/>in one portal.</p>
-        </div>
-        {/* Left Card (Reset Password Form) */}
-        <div className="flex-1 bg-white p-8 md:p-16 flex flex-col justify-center">
-          <div className="mb-8">
-            <h2 className="text-3xl font-semibold mb-2">Set New Password</h2>
-            <div className="flex items-center gap-2 text-gray-700 text-base">
-              <span>Remembered your password?</span>
-              <Link href="/login" className="text-black font-bold hover:underline">Login</Link>
-            </div>
-          </div>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <Label htmlFor="password" className="font-medium">New Password</Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  name="password"
-                  type={showPassword ? "text" : "password"}
-                  autoComplete="new-password"
-                  required
-                  value={form.password}
-                  onChange={handleChange}
-                  className="mt-1 pr-10"
-                />
-                <button
-                  type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
-                  onClick={() => setShowPassword(v => !v)}
-                  tabIndex={-1}
-                >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="confirmPassword" className="font-medium">Confirm New Password</Label>
-              <div className="relative">
-                <Input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type={showConfirmPassword ? "text" : "password"}
-                  autoComplete="new-password"
-                  required
-                  value={form.confirmPassword}
-                  onChange={handleChange}
-                  className="mt-1 pr-10"
-                />
-                <button
-                  type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
-                  onClick={() => setShowConfirmPassword(v => !v)}
-                  tabIndex={-1}
-                >
-                  {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-            </div>
-            <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-lg py-3 rounded-md cursor-pointer" disabled={loading}>
-              {loading ? "Setting..." : "Set Password"}
-            </Button>
-          </form>
+    <>
+      <div className="mb-8">
+        <h2 className="text-3xl font-semibold mb-2">Set New Password</h2>
+        <div className="flex items-center gap-2 text-gray-700 text-base">
+          <span>Remembered your password?</span>
+          <Link href="/login" className="text-black font-bold hover:underline">Login</Link>
         </div>
       </div>
-    </div>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div>
+          <Label htmlFor="password" className="font-medium">New Password</Label>
+          <div className="relative">
+            <Input
+              id="password"
+              name="password"
+              type={showPassword ? "text" : "password"}
+              autoComplete="new-password"
+              required
+              value={form.password}
+              onChange={handleChange}
+              className="mt-1 pr-10"
+            />
+            <button
+              type="button"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+              onClick={() => setShowPassword(v => !v)}
+              tabIndex={-1}
+            >
+              {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+            </button>
+          </div>
+        </div>
+        <div>
+          <Label htmlFor="confirmPassword" className="font-medium">Confirm New Password</Label>
+          <div className="relative">
+            <Input
+              id="confirmPassword"
+              name="confirmPassword"
+              type={showConfirmPassword ? "text" : "password"}
+              autoComplete="new-password"
+              required
+              value={form.confirmPassword}
+              onChange={handleChange}
+              className="mt-1 pr-10"
+            />
+            <button
+              type="button"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+              onClick={() => setShowConfirmPassword(v => !v)}
+              tabIndex={-1}
+            >
+              {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+            </button>
+          </div>
+        </div>
+        <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-lg py-3 rounded-md cursor-pointer" disabled={loading}>
+          {loading ? "Setting..." : "Set Password"}
+        </Button>
+      </form>
+    </>
   );
 } 

@@ -73,91 +73,81 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white">
-      <div className="flex w-full max-w-5xl shadow-lg rounded-lg overflow-hidden">
-        {/* Right Card (Branding) */}
-        <div className="hidden md:flex flex-col justify-center items-start bg-slate-900 text-white w-1/2 p-12">
-          <h1 className="text-5xl font-bold mb-4 text-left">Clientlane</h1>
-          <p className="text-2xl font-light text-left">Everything your client needs<br/>in one portal.</p>
-        </div>
-        {/* Left Card (Login Form) */}
-        <div className="flex-1 bg-white p-8 md:p-16 flex flex-col justify-center">
-          <div className="mb-8">
-            <h2 className="text-3xl font-semibold mb-2">Login to your account</h2>
-            <div className="flex items-center gap-2 text-gray-700 text-base">
-              <span>Don't have an account?</span>
-              <Link href="/signup" className="text-black font-bold hover:underline">Sign Up</Link>
-            </div>
-          </div>
-          <Button
-            variant="outline"
-            className="w-full flex items-center justify-center gap-2 mb-6 border-gray-300"
-            // onClick={() => signIn("google")}
-            onClick={() => { /* Google sign-in deferred */ }}
-            disabled
-          >
-            <img src="/google.svg" alt="Google" className="w-5 h-5" />
-            Sign in with Google
-          </Button>
-          <div className="flex items-center my-4">
-            <div className="flex-1 h-px bg-gray-300" />
-            <span className="mx-4 text-gray-500 font-medium">OR</span>
-            <div className="flex-1 h-px bg-gray-300" />
-          </div>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <Label htmlFor="email" className="font-medium">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <div className="flex justify-between items-center">
-                <Label htmlFor="password" className="font-medium">Password</Label>
-                <Link href="/forgot-password" className="text-gray-500 text-sm hover:underline">Forgot Password?</Link>
-              </div>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  autoComplete="current-password"
-                  required
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  className="mt-1 pr-10"
-                />
-                <button
-                  type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
-                  onClick={() => setShowPassword(v => !v)}
-                  tabIndex={-1}
-                >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-            </div>
-            <div className="flex items-center">
-              <input
-                id="remember"
-                type="checkbox"
-                checked={remember}
-                onChange={e => setRemember(e.target.checked)}
-                className="mr-2"
-              />
-              <Label htmlFor="remember" className="text-gray-700">Remember me</Label>
-            </div>
-            <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-lg py-3 rounded-md cursor-pointer" disabled={loading}>
-              {loading ? "Logging in..." : "Login"}
-            </Button>
-          </form>
+    <>
+      <div className="mb-8">
+        <h2 className="text-3xl font-semibold mb-2">Login to your account</h2>
+        <div className="flex items-center gap-2 text-gray-700 text-base">
+          <span>Don't have an account?</span>
+          <Link href="/signup" className="text-black font-bold hover:underline">Sign Up</Link>
         </div>
       </div>
-    </div>
+      <Button
+        variant="outline"
+        className="w-full flex items-center justify-center gap-2 mb-6 border-gray-300"
+        // onClick={() => signIn("google")}
+        onClick={() => { /* Google sign-in deferred */ }}
+        disabled
+      >
+        <img src="/google.svg" alt="Google" className="w-5 h-5" />
+        Sign in with Google
+      </Button>
+      <div className="flex items-center my-4">
+        <div className="flex-1 h-px bg-gray-300" />
+        <span className="mx-4 text-gray-500 font-medium">OR</span>
+        <div className="flex-1 h-px bg-gray-300" />
+      </div>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div>
+          <Label htmlFor="email" className="font-medium">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            autoComplete="email"
+            required
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            className="mt-1"
+          />
+        </div>
+        <div>
+          <div className="flex justify-between items-center">
+            <Label htmlFor="password" className="font-medium">Password</Label>
+            <Link href="/forgot-password" className="text-gray-500 text-sm hover:underline">Forgot Password?</Link>
+          </div>
+          <div className="relative">
+            <Input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              autoComplete="current-password"
+              required
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              className="mt-1 pr-10"
+            />
+            <button
+              type="button"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+              onClick={() => setShowPassword(v => !v)}
+              tabIndex={-1}
+            >
+              {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+            </button>
+          </div>
+        </div>
+        <div className="flex items-center">
+          <input
+            id="remember"
+            type="checkbox"
+            checked={remember}
+            onChange={e => setRemember(e.target.checked)}
+            className="mr-2"
+          />
+          <Label htmlFor="remember" className="text-gray-700">Remember me</Label>
+        </div>
+        <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-lg py-3 rounded-md cursor-pointer" disabled={loading}>
+          {loading ? "Logging in..." : "Login"}
+        </Button>
+      </form>
+    </>
   );
 } 
