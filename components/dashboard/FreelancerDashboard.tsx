@@ -155,7 +155,7 @@ export function FreelancerDashboard() {
         {/* First Row: Monthly Activity and Top Active Portals */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Monthly Activity Chart */}
-          <Card className="border-0 shadow-xl">
+          <Card className="border-2 border-gray-300 shadow-xl">
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -179,7 +179,7 @@ export function FreelancerDashboard() {
           </Card>
 
           {/* Top Portals */}
-          <Card className="border-0 shadow-xl">
+          <Card className="border-2 border-gray-300 shadow-xl">
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-xl">
                 <TrendingUp className="h-5 w-5" />
@@ -241,7 +241,7 @@ export function FreelancerDashboard() {
         {/* Second Row: Plan Usage and Recent Activity */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Plan Usage */}
-          <Card className="border-0 shadow-xl">
+          <Card className="border-2 border-gray-300 shadow-xl">
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-xl">
                 <Crown className="h-5 w-5" />
@@ -296,7 +296,7 @@ export function FreelancerDashboard() {
           </Card>
 
           {/* Recent Activity */}
-          <Card className="border-0 shadow-xl">
+          <Card className="border-2 border-gray-300 shadow-xl">
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-xl">
                 <Activity className="h-5 w-5" />

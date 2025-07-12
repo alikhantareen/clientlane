@@ -2,6 +2,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
+import { ArrowUpRight } from "lucide-react";
 
 export interface PortalCardProps {
   cardImage: string;
@@ -37,19 +38,21 @@ export function PortalCard({
   const { data: session } = useSession();
   const user = session?.user as any;
   return (
-    <div className="w-full bg-white rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden group hover:scale-[1.02] transform">
+    <div className="w-full bg-white rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden group hover:scale-[1.02] transform border-2 border-gray-300">
       {/* Card Image */}
-      <div className="relative w-full aspect-[16/9] overflow-hidden">
-        <Image
-          src={cardImage}
-          alt="Portal Card"
-          fill
-          className="object-cover group-hover:scale-105 transition-transform duration-500"
-          loading="lazy"
-          sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-        />
+      <div className="relative w-full aspect-[16/9] p-3">
+        <div className="relative w-full h-full rounded-lg overflow-hidden">
+          <Image
+            src={cardImage}
+            alt="Portal Card"
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-500"
+            loading="lazy"
+            sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+          />
+        </div>
         {/* Status Badge */}
-        <div className="absolute top-3 right-3">
+        <div className="absolute top-6 right-6">
           <span
             className="inline-flex items-center px-3 py-1 rounded-full text-white text-xs font-medium"
             style={{
@@ -75,7 +78,7 @@ export function PortalCard({
               </span>
             </div>
             <span className="text-sm text-gray-600">
-              Type: {user?.role === "freelancer" ? "Client" : "Freelancer"}
+              {user?.role === "freelancer" ? `${clientName}` : `${freelancerName}`}
             </span>
           </div>
         </div>
@@ -111,6 +114,7 @@ export function PortalCard({
             onClick={onView}
           >
             {viewLabel}
+            <ArrowUpRight className="ml-2 w-5 h-5 group-hover/button:translate-x-1 transition-transform duration-200" />
           </Button>
         </div>
       </div>

@@ -236,7 +236,7 @@ export default function AllPortalsPage() {
               <span className="truncate">
                 {dateRange?.from && dateRange?.to
                   ? `${format(dateRange.from, "MMM d, yyyy")} - ${format(dateRange.to, "MMM d, yyyy")}`
-                  : "Date range"}
+                  : "Choose date range"}
               </span>
             </Button>
           </PopoverTrigger>
@@ -259,6 +259,7 @@ export default function AllPortalsPage() {
             ]}
             value={status}
             onChange={handleStatusChange}
+            placeholder="Select status"
           />
         </div>
         {/* Clear Filters */}

@@ -213,7 +213,7 @@ export function ClientDashboard() {
         {/* First Row: My Project Portals and Recent Files */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Project Portals */}
-          <Card className="border-0 shadow-xl">
+          <Card className="border-2 border-gray-300 shadow-xl">
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-xl">
                 <FolderOpen className="h-6 w-6" />
@@ -297,7 +297,7 @@ export function ClientDashboard() {
           </Card>
 
           {/* Recent Files */}
-          <Card className="border-0 shadow-xl">
+          <Card className="border-2 border-gray-300 shadow-xl">
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-xl">
                 <Upload className="h-5 w-5" />
@@ -369,7 +369,7 @@ export function ClientDashboard() {
         {/* Second Row: Recent Updates and Recent Activity */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Recent Updates */}
-          <Card className="border-0 shadow-xl">
+          <Card className="border-2 border-gray-300 shadow-xl">
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-xl">
                 <FileText className="h-5 w-5" />
@@ -432,7 +432,7 @@ export function ClientDashboard() {
           </Card>
 
           {/* Recent Activity */}
-          <Card className="border-0 shadow-xl">
+          <Card className="border-2 border-gray-300 shadow-xl">
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-xl">
                 <Activity className="h-5 w-5" />
@@ -515,7 +515,7 @@ function ClientDashboardSkeleton() {
         {/* First Row: My Project Portals and Recent Files */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {[...Array(2)].map((_, i) => (
-            <Card key={i} className="border-0 shadow-xl">
+            <Card key={i} className="border-2 border-gray-300 shadow-xl">
               <CardHeader>
                 <div className="h-6 w-48 bg-gray-200 rounded animate-pulse mb-2" />
                 <div className="h-4 w-64 bg-gray-200 rounded animate-pulse" />
@@ -530,7 +530,7 @@ function ClientDashboardSkeleton() {
         {/* Second Row: Recent Updates and Recent Activity */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {[...Array(2)].map((_, i) => (
-            <Card key={i} className="border-0 shadow-xl">
+            <Card key={i} className="border-2 border-gray-300 shadow-xl">
               <CardHeader>
                 <div className="h-6 w-32 bg-gray-200 rounded animate-pulse mb-2" />
                 <div className="h-4 w-48 bg-gray-200 rounded animate-pulse" />
