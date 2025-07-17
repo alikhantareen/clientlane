@@ -18,6 +18,7 @@ export interface PortalCardProps {
   onView?: () => void;
   shareLabel?: string;
   viewLabel?: string;
+  dueDate?: string
 }
 
 export function PortalCard({
@@ -34,6 +35,7 @@ export function PortalCard({
   onView,
   shareLabel = "Share Link",
   viewLabel = "View",
+  dueDate
 }: PortalCardProps) {
   const { data: session } = useSession();
   const user = session?.user as any;
@@ -94,9 +96,9 @@ export function PortalCard({
             </span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-600">Last updated:</span>
+            <span className="text-sm text-gray-600">Due Date:</span>
             <span className="text-sm font-medium text-gray-900">
-              {lastUpdated}
+              {dueDate}
             </span>
           </div>
           <div className="flex justify-between items-center">

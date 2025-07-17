@@ -45,6 +45,10 @@ export function generateNotificationLink(
       }
       return basePortalUrl;
 
+    case "deadline_reminder":
+      // Link to portal overview for deadline reminders
+      return basePortalUrl;
+
     default:
       // Fallback to portal overview
       return basePortalUrl;
@@ -81,6 +85,12 @@ export function generateNotificationMessage(
         return `${actorName} posted "${meta.updateTitle}"`;
       }
       return `${actorName} posted a new update`;
+
+    case "deadline_reminder":
+      if (meta.portalName) {
+        return `Reminder: The deadline for project '${meta.portalName}' is in 7 days.`;
+      }
+      return `Project deadline reminder: 7 days remaining`;
 
     default:
       return `New activity from ${actorName}`;

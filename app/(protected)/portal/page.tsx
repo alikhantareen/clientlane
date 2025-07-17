@@ -321,6 +321,7 @@ export default function AllPortalsPage() {
                   newUpdates={`${portal.updatesCount} New Updates`}
                   onShareLink={() => {}}
                   onView={() => router.push(`/portal/${portal.id}`)}
+                  dueDate={portal.dueDate ? format(new Date(portal.dueDate), "MMM d, yyyy") : "-"}
                 />
               ))}
         </div>

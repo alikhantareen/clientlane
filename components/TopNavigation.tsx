@@ -169,6 +169,8 @@ export default function TopNavigation({ children }: TopNavigationProps) {
         return "⚙️";
       case "new_update":
         return "📝";
+      case "deadline_reminder":
+        return "⏰";
       default:
         return "🔔";
     }

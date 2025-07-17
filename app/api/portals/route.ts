@@ -111,6 +111,7 @@ export async function GET(req: NextRequest) {
       freelancerName: portal.freelancer?.name || "",
       updated_at: portal.updated_at,
       updatesCount: portal.updates.length,
+      dueDate: portal.dueDate || null, // Add dueDate to the response
     }));
 
     return NextResponse.json({ portals: data, total });

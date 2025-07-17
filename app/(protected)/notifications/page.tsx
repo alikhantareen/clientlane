@@ -217,6 +217,8 @@ export default function NotificationsPage() {
         return "⚙️";
       case "new_update":
         return "📝";
+      case "deadline_reminder":
+        return "⏰";
       default:
         return "🔔";
     }

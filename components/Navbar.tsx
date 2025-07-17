@@ -117,6 +117,8 @@ export default function Navbar({ setSidebarOpen, title = "Dashboard" }: NavbarPr
         return "⚙️";
       case "new_update":
         return "📝";
+      case "deadline_reminder":
+        return "⏰";
       default:
         return "🔔";
     }
