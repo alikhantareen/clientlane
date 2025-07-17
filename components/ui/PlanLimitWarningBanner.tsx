@@ -96,7 +96,7 @@ export function PlanLimitWarningBanner({ className = "" }: PlanLimitWarningBanne
               <Button
                 size="sm"
                 onClick={handleUpgrade}
-                className="bg-red-600 text-white hover:bg-red-700 text-xs px-3 py-1"
+                className="bg-red-600 text-white hover:bg-red-700 text-xs px-3 py-1 cursor-pointer"
               >
                 Upgrade Plan
               </Button>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { prisma } from "@/lib/prisma";
+import { updateUserLastSeen } from "@/lib/utils/helpers";
 
 export async function GET(req: NextRequest) {
   try {
@@ -21,8 +22,11 @@ export async function GET(req: NextRequest) {
     }
 
     if (user.role !== "client") {
-      return NextResponse.json({ error: "Only clients can access this endpoint" }, { status: 403 });
+      return NextResponse.json({ error: "Only clients can access this dashboard" }, { status: 403 });
     }
+
+    // Update last_seen_at for the user
+    await updateUserLastSeen(user.id);
 
     // Parse query parameters for pagination
     const { searchParams } = new URL(req.url);

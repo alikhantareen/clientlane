@@ -5,6 +5,8 @@ import { z } from "zod";
 import fs from "fs";
 import path from "path";
 import { canUserUploadFiles } from "@/lib/utils/subscription";
+import { createNotification } from "@/lib/utils/notifications";
+import { updateUserLastSeen } from "@/lib/utils/helpers";
 
 const updateReplySchema = z.object({
   content: z.string().min(1, "Content is required"),
@@ -24,6 +26,9 @@ export async function PUT(
     if (!token || !token.sub) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    // Update last_seen_at for the user
+    await updateUserLastSeen(token.sub);
 
     const { replyId } = await params;
 
@@ -290,3 +295,5 @@ export async function DELETE(
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 } 
+
+ 

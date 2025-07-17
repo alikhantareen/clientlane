@@ -86,6 +86,19 @@ export const authOptions: NextAuthOptions = {
           });
         }
       }
+
+      // Update last_seen_at when user signs in
+      if (user.id) {
+        try {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { last_seen_at: new Date() }
+          });
+        } catch (error) {
+          console.error("Error updating last_seen_at:", error);
+        }
+      }
+
       return true;
     },
   },

@@ -72,6 +72,15 @@ export default function SettingsPage() {
     if (type === "file") {
       const file = files?.[0];
       if (file) {
+        // Check file size limits for profile image
+        const maxFileSizeMB = 5; // Free plan limit
+        const maxFileSizeBytes = maxFileSizeMB * 1024 * 1024;
+        
+        if (file.size > maxFileSizeBytes) {
+          toast.error(`File "${file.name}" is too large. Maximum file size is ${maxFileSizeMB}MB.`);
+          return;
+        }
+        
         // Clean up previous preview URL
         if (imagePreview) {
           URL.revokeObjectURL(imagePreview);

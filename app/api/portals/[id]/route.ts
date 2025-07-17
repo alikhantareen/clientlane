@@ -6,6 +6,7 @@ import fs from "fs";
 import path from "path";
 import { canUserUploadFiles } from "@/lib/utils/subscription";
 import { createNotification } from "@/lib/utils/notifications";
+import { updateUserLastSeen } from "@/lib/utils/helpers";
 
 const updatePortalSchema = z.object({
   name: z.string().min(2).optional(),
@@ -29,6 +30,11 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { id: portalId } = await params;
+
+    // Update last_seen_at for the user
+    await updateUserLastSeen(token.sub);
+
     // Verify user exists
     const user = await prisma.user.findUnique({
       where: { id: token.sub },
@@ -42,8 +48,6 @@ export async function GET(
     if (user.role !== "freelancer" && user.role !== "client") {
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
-
-    const { id: portalId } = await params;
 
     // Find portal and ensure user has access to it
     const where: any = { id: portalId };

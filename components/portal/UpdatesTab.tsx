@@ -310,10 +310,10 @@ export function UpdatesTab({ portalId }: UpdatesTabProps) {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="font-medium text-gray-900">
+                      <span className="font-medium text-gray-900 text-xs">
                         {update.user.name}
                       </span>
-                      <span className="text-sm text-gray-500">
+                      <span className="text-xs text-gray-500">
                         {formatDistanceToNow(new Date(update.created_at), {
                           addSuffix: true,
                         })}
@@ -321,7 +321,7 @@ export function UpdatesTab({ portalId }: UpdatesTabProps) {
                     </div>
                     <div className="space-y-2">
                       <p
-                        className="text-gray-900 text-sm font-medium cursor-pointer hover:underline"
+                        className="text-gray-900 text-2xl font-medium cursor-pointer hover:underline"
                         onClick={() =>
                           router.push(`/portal/${portalId}/update/${update.id}`)
                         }

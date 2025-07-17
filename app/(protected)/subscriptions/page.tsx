@@ -161,6 +161,7 @@ export default function SubscriptionsPage() {
                       variant="outline"
                       size="sm"
                       disabled={loading === 'manage'}
+                      className="cursor-pointer"
                     >
                       {loading === 'manage' ? (
                         <Loader2 className="h-4 w-4 animate-spin" />

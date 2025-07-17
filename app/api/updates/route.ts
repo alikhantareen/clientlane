@@ -6,6 +6,7 @@ import fs from "fs";
 import path from "path";
 import { createNotification } from "@/lib/utils/notifications";
 import { canUserUploadFiles } from "@/lib/utils/subscription";
+import { updateUserLastSeen } from "@/lib/utils/helpers";
 
 const createUpdateSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -27,6 +28,9 @@ export async function POST(req: NextRequest) {
     if (!token || !token.sub) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    // Update last_seen_at for the user
+    await updateUserLastSeen(token.sub);
 
     // Ensure uploads directory exists
     const uploadDir = path.join(process.cwd(), "public/uploads");

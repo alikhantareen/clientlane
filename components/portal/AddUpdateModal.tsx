@@ -88,7 +88,20 @@ export function AddUpdateModal({ isOpen, onClose, portalId, editUpdate }: AddUpd
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(event.target.files || []);
-    setFiles(prev => [...prev, ...selectedFiles]);
+    
+    // Check file size limits before adding to state
+    const maxFileSizeMB = 5; // Free plan limit
+    const maxFileSizeBytes = maxFileSizeMB * 1024 * 1024;
+    
+    const validFiles = selectedFiles.filter(file => {
+      if (file.size > maxFileSizeBytes) {
+        toast.error(`File "${file.name}" is too large. Maximum file size is ${maxFileSizeMB}MB.`);
+        return false;
+      }
+      return true;
+    });
+    
+    setFiles(prev => [...prev, ...validFiles]);
   };
 
   const removeFile = (index: number) => {
@@ -157,7 +170,9 @@ export function AddUpdateModal({ isOpen, onClose, portalId, editUpdate }: AddUpd
       onClose();
     } catch (error) {
       console.error("Error saving update:", error);
-      // You might want to show an error message to the user here
+      // Show error toast to user
+      const errorMessage = error instanceof Error ? error.message : "Failed to save update";
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }

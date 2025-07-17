@@ -1,4 +1,5 @@
 // Common utility functions
+import { prisma } from "@/lib/prisma";
 
 /**
  * Format a date to a readable string
@@ -205,5 +206,56 @@ export async function copyToClipboard(text: string): Promise<boolean> {
   } catch (error) {
     console.error('Failed to copy text:', error)
     return false
+  }
+}
+
+/**
+ * Update the last_seen_at field for a user
+ * This should be called when users perform authenticated actions
+ */
+export async function updateUserLastSeen(userId: string) {
+  try {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { last_seen_at: new Date() }
+    });
+  } catch (error) {
+    console.error("Error updating last_seen_at:", error);
+  }
+}
+
+/**
+ * Update all users' last_seen_at based on their most recent activity
+ * This is a one-time fix for existing data
+ */
+export async function updateAllUsersLastSeen() {
+  try {
+    // Get all users with their most recent activity
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        last_seen_at: true,
+        activities: {
+          orderBy: { created_at: 'desc' },
+          take: 1,
+          select: { created_at: true }
+        }
+      }
+    });
+
+    // Update each user's last_seen_at if they have recent activity
+    for (const user of users) {
+      const latestActivity = user.activities[0]?.created_at;
+      if (latestActivity && (!user.last_seen_at || latestActivity > user.last_seen_at)) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { last_seen_at: latestActivity }
+        });
+      }
+    }
+
+    console.log(`Updated last_seen_at for ${users.length} users`);
+  } catch (error) {
+    console.error("Error updating all users' last_seen_at:", error);
   }
 } 

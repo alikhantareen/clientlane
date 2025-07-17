@@ -272,7 +272,7 @@ export default function NotificationsPage() {
               Refresh
             </Button>
             {unreadCount > 0 && (
-              <Button onClick={markAllAsRead} variant="outline" className="cursor-pointer text-gray-300 border-gray-300 hover:bg-slate-800 hover:text-white">
+              <Button onClick={markAllAsRead} variant="outline" className="cursor-pointer text-gray-900 border-gray-300 hover:bg-slate-800 hover:text-white">
                 Mark all as read
               </Button>
             )}

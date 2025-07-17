@@ -158,7 +158,20 @@ export default function UpdateDetailsPage() {
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
-    setReplyFiles((prev) => [...prev, ...files]);
+    
+    // Check file size limits before adding to state
+    const maxFileSizeMB = 5; // Free plan limit
+    const maxFileSizeBytes = maxFileSizeMB * 1024 * 1024;
+    
+    const validFiles = files.filter(file => {
+      if (file.size > maxFileSizeBytes) {
+        toast.error(`File "${file.name}" is too large. Maximum file size is ${maxFileSizeMB}MB.`);
+        return false;
+      }
+      return true;
+    });
+    
+    setReplyFiles((prev) => [...prev, ...validFiles]);
   };
 
   const removeFile = (index: number) => {
@@ -205,9 +218,8 @@ export default function UpdateDetailsPage() {
       }
 
       if (!response.ok) {
-        throw new Error(
-          editingReply ? "Failed to update reply" : "Failed to post reply"
-        );
+        const errorData = await response.json();
+        throw new Error(errorData.error || (editingReply ? "Failed to update reply" : "Failed to post reply"));
       }
 
       // Show success toast
@@ -223,13 +235,9 @@ export default function UpdateDetailsPage() {
       await fetchUpdate();
     } catch (err) {
       console.error("Error submitting reply:", err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : editingReply
-            ? "Failed to update reply"
-            : "Failed to post reply"
-      );
+      const errorMessage = err instanceof Error ? err.message : (editingReply ? "Failed to update reply" : "Failed to post reply");
+      toast.error(errorMessage);
+      setError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -393,7 +401,7 @@ export default function UpdateDetailsPage() {
 
   // Skeleton component for loading state
   const UpdateDetailsSkeleton = () => (
-    <div className="max-w-4xl mx-auto p-6 space-y-6 animate-pulse">
+    <div className="w-full mx-auto p-6 space-y-6 animate-pulse">
       {/* Header Skeleton */}
       <div className="flex items-center gap-4 mb-6">
         <div className="flex items-center gap-2">
@@ -705,7 +713,7 @@ export default function UpdateDetailsPage() {
       </div>
 
       {/* Reply Input Box - Fixed to bottom */}
-      <div className="fixed -bottom-6 left-0 right-0 bg-white border-t z-50 lg:left-64">
+      <div className="fixed -bottom-6 left-0 right-0 bg-white border-t z-50">
         <div className="max-w-4xl mx-auto px-6 py-4">
           {/* Edit mode indicator */}
           {editingReply && (

@@ -4,6 +4,9 @@ import { getToken } from "next-auth/jwt";
 import { z } from "zod";
 import fs from "fs";
 import path from "path";
+import { createNotification } from "@/lib/utils/notifications";
+import { canUserUploadFiles } from "@/lib/utils/subscription";
+import { updateUserLastSeen } from "@/lib/utils/helpers";
 
 const getFilesSchema = z.object({
   portalId: z.string().uuid("Invalid portal ID"),
@@ -19,6 +22,9 @@ export async function GET(req: NextRequest) {
     if (!token || !token.sub) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    // Update last_seen_at for the user
+    await updateUserLastSeen(token.sub);
 
     // Parse query parameters
     const url = new URL(req.url);
@@ -114,4 +120,6 @@ export async function GET(req: NextRequest) {
     console.error("Error fetching files:", error);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
-} 
+}
+
+ 

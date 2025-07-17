@@ -142,6 +142,18 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session, stripe:
     endDate: endDate.toISOString()
   });
 
+  // Ensure customer exists and has proper metadata
+  const customer = await stripe.customers.retrieve(subscription.customer as string);
+  if ('metadata' in customer && !customer.metadata?.userId) {
+    console.log('Adding userId metadata to customer:', customer.id);
+    await stripe.customers.update(customer.id, {
+      metadata: {
+        userId: userId,
+        role: 'freelancer'
+      }
+    });
+  }
+
   // Create subscription in database
   await prisma.subscription.create({
     data: {

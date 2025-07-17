@@ -46,10 +46,15 @@ export async function POST(req: NextRequest) {
       }, { status: 500 });
     }
 
-    // Get user from database
+    // Get user from database with subscription info
     const user = await prisma.user.findUnique({
       where: { id: token.sub },
-      select: { id: true, email: true, role: true }
+      select: { 
+        id: true, 
+        email: true, 
+        name: true,
+        role: true 
+      }
     });
 
     if (!user) {
@@ -70,13 +75,90 @@ export async function POST(req: NextRequest) {
         limit: 1,
       });
 
-      if (existingCustomers.data.length === 0) {
-        return NextResponse.json({ 
-          error: "No billing account found. Please subscribe to a plan first." 
-        }, { status: 404 });
-      }
+      let customerId: string;
 
-      const customerId = existingCustomers.data[0].id;
+      if (existingCustomers.data.length === 0) {
+        // Check if user has an active subscription in database
+        const activeSubscription = await prisma.subscription.findFirst({
+          where: {
+            user_id: user.id,
+            is_active: true,
+            ends_at: {
+              gt: new Date()
+            }
+          },
+          include: {
+            plan: true
+          }
+        });
+
+        if (activeSubscription) {
+          // Auto-create Stripe customer for users with active subscriptions
+          console.log(`Auto-creating Stripe customer for user ${user.email} with active ${activeSubscription.plan.name} subscription`);
+          
+          const customer = await stripe.customers.create({
+            email: user.email,
+            name: user.name,
+            metadata: {
+              userId: user.id,
+              role: user.role,
+            },
+          });
+
+          customerId = customer.id;
+
+          // Optionally create Stripe subscription to match database
+          if (activeSubscription.plan.name === 'Pro Plan' && process.env.STRIPE_PRO_PRICE_ID) {
+            try {
+              await stripe.subscriptions.create({
+                customer: customerId,
+                items: [{ price: process.env.STRIPE_PRO_PRICE_ID }],
+                metadata: {
+                  userId: user.id,
+                  planId: activeSubscription.plan.id,
+                },
+                trial_end: Math.floor(activeSubscription.ends_at.getTime() / 1000),
+                trial_settings: {
+                  end_behavior: {
+                    missing_payment_method: 'cancel',
+                  },
+                },
+              });
+              console.log(`Created Stripe subscription for user ${user.email}`);
+            } catch (subError) {
+              console.error('Failed to create Stripe subscription:', subError);
+              // Continue anyway - customer portal will still work
+            }
+          } else if (activeSubscription.plan.name === 'Agency Plan' && process.env.STRIPE_AGENCY_PRICE_ID) {
+            try {
+              await stripe.subscriptions.create({
+                customer: customerId,
+                items: [{ price: process.env.STRIPE_AGENCY_PRICE_ID }],
+                metadata: {
+                  userId: user.id,
+                  planId: activeSubscription.plan.id,
+                },
+                trial_end: Math.floor(activeSubscription.ends_at.getTime() / 1000),
+                trial_settings: {
+                  end_behavior: {
+                    missing_payment_method: 'cancel',
+                  },
+                },
+              });
+              console.log(`Created Stripe subscription for user ${user.email}`);
+            } catch (subError) {
+              console.error('Failed to create Stripe subscription:', subError);
+              // Continue anyway - customer portal will still work
+            }
+          }
+        } else {
+          return NextResponse.json({ 
+            error: "No billing account found. Please subscribe to a plan first." 
+          }, { status: 404 });
+        }
+      } else {
+        customerId = existingCustomers.data[0].id;
+      }
 
       // Create billing portal session
       const portalSession = await stripe.billingPortal.sessions.create({

@@ -49,10 +49,7 @@ export const SUBSCRIPTION_PLANS = {
       '25MB per file upload',
       'Comments & collaboration',
       'Activity feed & notifications',
-      'Team collaboration',
       'Priority support',
-      'Custom branding',
-      'Advanced analytics'
     ],
     clientLimit: 5,
     popular: true,
@@ -69,12 +66,7 @@ export const SUBSCRIPTION_PLANS = {
       '100MB per file upload',
       'Comments & collaboration',
       'Activity feed & notifications',
-      'Unlimited team members',
       '24/7 priority support',
-      'Custom branding',
-      'Advanced analytics',
-      'White-label solution',
-      'API access'
     ],
     clientLimit: null, // null means unlimited
     popular: false,

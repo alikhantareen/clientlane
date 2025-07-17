@@ -58,7 +58,7 @@ export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
         // Non-dashboard pages get the standard layout with TopNavigation
         <div className="min-h-screen bg-gray-50">
           <TopNavigation />
-          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <main className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
             {children}
           </main>
         </div>

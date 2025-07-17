@@ -117,7 +117,18 @@ export default function PortalCreateDialog({
   ) => {
     const { name, value, type, files } = e.target as any;
     if (type === "file") {
-      setForm((prev) => ({ ...prev, [name]: files[0] }));
+      const file = files[0];
+      if (file) {
+        // Check file size limits for thumbnail
+        const maxFileSizeMB = 5; // Free plan limit
+        const maxFileSizeBytes = maxFileSizeMB * 1024 * 1024;
+        
+        if (file.size > maxFileSizeBytes) {
+          toast.error(`File "${file.name}" is too large. Maximum file size is ${maxFileSizeMB}MB.`);
+          return;
+        }
+      }
+      setForm((prev) => ({ ...prev, [name]: file }));
     } else {
       setForm((prev) => ({ ...prev, [name]: value }));
     }
@@ -192,23 +203,32 @@ export default function PortalCreateDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogTrigger asChild>
-        {!portalId && (
+      {!portalId && canCreatePortal && (
+        <DialogTrigger asChild>
           <div className="w-full md:w-fit">
             <Button
-              disabled={!canCreatePortal}
-              className="bg-blue-600 text-white hover:bg-blue-700 hover:text-white cursor-pointer w-full md:w-fit disabled:opacity-50 disabled:cursor-not-allowed"
-              title={!canCreatePortal ? limitMessage : "Create a new portal"}
+              className="bg-blue-600 text-white hover:bg-blue-700 hover:text-white cursor-pointer w-full md:w-fit"
+              title="Create a new portal"
             >
               <Plus className="w-4 h-4 mr-2" />
               Create Portal
             </Button>
-            {!canCreatePortal && (
-              <p className="text-sm text-red-600 mt-1">{limitMessage}</p>
-            )}
           </div>
-        )}
-      </DialogTrigger>
+        </DialogTrigger>
+      )}
+      {!portalId && !canCreatePortal && (
+        <div className="w-full md:w-fit">
+          <Button
+            disabled
+            className="bg-blue-600 text-white hover:bg-blue-700 hover:text-white cursor-pointer w-full md:w-fit disabled:opacity-50 disabled:cursor-not-allowed"
+            title={limitMessage}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Create Portal
+          </Button>
+          <p className="text-sm text-red-600 mt-1">{limitMessage}</p>
+        </div>
+      )}
       <DialogContent className="max-w-2xl">
         <DialogHeader className="mb-4">
           <DialogTitle>

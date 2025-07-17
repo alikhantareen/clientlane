@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getToken } from "next-auth/jwt";
 import { z } from "zod";
+import { updateUserLastSeen } from "@/lib/utils/helpers";
 
 const clientsQuerySchema = z.object({
   page: z.string().optional().default("1"),
@@ -31,6 +32,9 @@ export async function GET(req: NextRequest) {
     if (user.role !== "freelancer") {
       return NextResponse.json({ error: "Only freelancers can access client data" }, { status: 403 });
     }
+
+    // Update last_seen_at for the freelancer
+    await updateUserLastSeen(user.id);
 
     // Parse query parameters
     const { searchParams } = new URL(req.url);
@@ -145,7 +149,14 @@ export async function GET(req: NextRequest) {
       
       let clientStatus: 'invited' | 'active' | 'inactive' = 'invited';
       if (!isInvited) {
-        clientStatus = lastActiveDate && lastActiveDate > thirtyDaysAgo ? 'active' : 'inactive';
+        // If last_seen_at is null but there's recent activity, consider them active
+        if (!client.last_seen_at && latestActivity && latestActivity > thirtyDaysAgo) {
+          clientStatus = 'active';
+        } else if (lastActiveDate && lastActiveDate > thirtyDaysAgo) {
+          clientStatus = 'active';
+        } else {
+          clientStatus = 'inactive';
+        }
       }
 
       return {

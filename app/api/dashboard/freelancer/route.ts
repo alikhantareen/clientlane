@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { prisma } from "@/lib/prisma";
 import { startOfMonth, endOfMonth, subMonths, format } from "date-fns";
+import { updateUserLastSeen } from "@/lib/utils/helpers";
 
 export async function GET(req: NextRequest) {
   try {
@@ -22,8 +23,11 @@ export async function GET(req: NextRequest) {
     }
 
     if (user.role !== "freelancer") {
-      return NextResponse.json({ error: "Only freelancers can access this endpoint" }, { status: 403 });
+      return NextResponse.json({ error: "Only freelancers can access this dashboard" }, { status: 403 });
     }
+
+    // Update last_seen_at for the user
+    await updateUserLastSeen(user.id);
 
     // Parse query parameters for pagination
     const { searchParams } = new URL(req.url);
