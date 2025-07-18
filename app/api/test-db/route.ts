@@ -14,8 +14,8 @@ export async function GET() {
       message: "Database connection successful",
       userCount,
       env: {
-        hasPrismaUrl: !!process.env.POSTGRES_PRISMA_URL,
-        hasDirectUrl: !!process.env.POSTGRES_URL_NON_POOLING,
+        hasPrismaUrl: !!process.env.PRISMA_DATABASE_URL,
+        hasDirectUrl: !!process.env.POSTGRES_URL,
         hasNextAuthUrl: !!process.env.NEXTAUTH_URL,
         hasNextAuthSecret: !!process.env.NEXTAUTH_SECRET,
       }
@@ -26,8 +26,8 @@ export async function GET() {
       success: false, 
       error: error instanceof Error ? error.message : "Unknown error",
       env: {
-        hasPrismaUrl: !!process.env.POSTGRES_PRISMA_URL,
-        hasDirectUrl: !!process.env.POSTGRES_URL_NON_POOLING,
+        hasPrismaUrl: !!process.env.PRISMA_DATABASE_URL,
+        hasDirectUrl: !!process.env.POSTGRES_URL,
         hasNextAuthUrl: !!process.env.NEXTAUTH_URL,
         hasNextAuthSecret: !!process.env.NEXTAUTH_SECRET,
       }
