@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Plus } from "lucide-react";
+import { Plus, Info } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
@@ -24,6 +24,12 @@ import {
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export interface PortalFormValues {
   portalName: string;
@@ -218,15 +224,28 @@ export default function PortalCreateDialog({
       )}
       {!portalId && !canCreatePortal && (
         <div className="w-full md:w-fit">
-          <Button
-            disabled
-            className="bg-blue-600 text-white hover:bg-blue-700 hover:text-white cursor-pointer w-full md:w-fit disabled:opacity-50 disabled:cursor-not-allowed"
-            title={limitMessage}
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Create Portal
-          </Button>
-          <p className="text-sm text-red-600 mt-1">{limitMessage}</p>
+          <div className="flex items-center gap-2">
+            <Button
+              disabled
+              className="bg-blue-600 text-white hover:bg-blue-700 hover:text-white cursor-pointer w-full md:w-fit disabled:opacity-50 disabled:cursor-not-allowed"
+              title={limitMessage}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Create Portal
+            </Button>
+            {limitMessage && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Info className="h-5 w-5 text-red-600" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{limitMessage}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+          </div>
         </div>
       )}
       <DialogContent className="max-w-2xl">
@@ -396,7 +415,7 @@ export default function PortalCreateDialog({
               />
             </div>
           )}
-          <div className="md:col-span-2 flex flex-col gap-2">
+                    <div className="md:col-span-2 flex flex-col gap-2">
             <DialogFooter>
               <Button
                 type="button"
@@ -407,19 +426,33 @@ export default function PortalCreateDialog({
               >
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                className="w-fit bg-blue-600 text-white hover:bg-blue-700 cursor-pointer"
-                disabled={loading}
-              >
-                {loading
-                  ? portalId
-                    ? "Updating..."
-                    : "Creating..."
-                  : portalId
-                    ? "Update Portal"
-                    : "Create Portal"}
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="submit"
+                  className="w-fit bg-blue-600 text-white hover:bg-blue-700 cursor-pointer"
+                  disabled={loading || !canCreatePortal}
+                >
+                  {loading
+                    ? portalId
+                      ? "Updating..."
+                      : "Creating..."
+                    : portalId
+                      ? "Update Portal"
+                      : "Create Portal"}
+                </Button>
+                {limitMessage && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Info className="h-5 w-5 text-red-600" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{limitMessage}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+              </div>
             </DialogFooter>
           </div>
         </form>
