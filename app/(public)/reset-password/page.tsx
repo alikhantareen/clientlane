@@ -38,7 +38,7 @@ export default function ResetPasswordPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const email = searchParams.get("email");
+  const token = searchParams?.get("token");
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -51,8 +51,8 @@ export default function ResetPasswordPage() {
       toast.error(parsed.error.errors[0].message);
       return;
     }
-    if (!email) {
-      toast.error("Email is missing. Please use the link from your email.");
+    if (!token) {
+      toast.error("Invalid reset link. Please request a new password reset.");
       return;
     }
     setLoading(true);
@@ -60,7 +60,7 @@ export default function ResetPasswordPage() {
       const res = await fetch("/api/auth/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password: form.password }),
+        body: JSON.stringify({ token, password: form.password }),
       });
       if (res.ok) {
         toast.success("Password has been reset successfully!");
@@ -75,6 +75,28 @@ export default function ResetPasswordPage() {
     }
     setLoading(false);
   };
+
+  // Show error if no token is present
+  if (!token) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
+          <div className="text-center">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">Invalid Reset Link</h2>
+            <p className="text-gray-600 mb-6">
+              This password reset link is invalid or has expired. Please request a new password reset.
+            </p>
+            <Link 
+              href="/forgot-password" 
+              className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md"
+            >
+              Request New Reset
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>

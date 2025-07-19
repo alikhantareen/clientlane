@@ -104,8 +104,10 @@ export default function OtpPage() {
         body: JSON.stringify({ email, otp }),
       });
       if (res.ok) {
+        const data = await res.json();
         toast.success("OTP has been verified successfully.");
         setOtp("");
+        
         // Route based on source: signup goes to login, forgot-password goes to reset-password, login goes to dashboard
         if (source === "signup") {
           toast.success(
@@ -113,7 +115,12 @@ export default function OtpPage() {
           );
           router.push("/login");
         } else if (source === "forgot-password") {
-          router.push(`/reset-password?email=${encodeURIComponent(email)}`);
+          // Use secure token instead of email in URL
+          if (data.resetToken) {
+            router.push(`/reset-password?token=${data.resetToken}`);
+          } else {
+            toast.error("Failed to generate reset token. Please try again.");
+          }
         } else if (source === "login") {
           toast.success(
             "Email verified successfully! You can now login to your account."

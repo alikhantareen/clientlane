@@ -33,6 +33,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    if (!user.password_hash) {
+      return NextResponse.json({ error: "No password set for this account" }, { status: 400 });
+    }
+
     // Verify password
     const isValid = await compare(parsed.data.currentPassword, user.password_hash);
     if (!isValid) {

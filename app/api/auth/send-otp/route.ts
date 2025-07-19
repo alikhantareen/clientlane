@@ -23,6 +23,10 @@ export async function POST(req: NextRequest) {
     const deleteResult = await prisma.oTP.deleteMany({ where: { email } });
     console.log("🗑️ Deleted previous OTPs:", deleteResult.count);
     
+    // Also delete any existing password reset tokens for this email (security enhancement)
+    const deleteTokensResult = await prisma.passwordResetToken.deleteMany({ where: { email } });
+    console.log("🔒 Deleted existing password reset tokens:", deleteTokensResult.count);
+    
     // Store new OTP
     const createdOTP = await prisma.oTP.create({
       data: {

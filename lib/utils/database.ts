@@ -151,3 +151,21 @@ export async function getConnectionMetrics() {
     }
   }
 } 
+
+export async function cleanupExpiredTokens() {
+  try {
+    const result = await prisma.passwordResetToken.deleteMany({
+      where: {
+        OR: [
+          { expiresAt: { lt: new Date() } },
+          { used: true }
+        ]
+      }
+    });
+    console.log(`🧹 Cleaned up ${result.count} expired/used password reset tokens`);
+    return result.count;
+  } catch (error) {
+    console.error('Error cleaning up expired tokens:', error);
+    return 0;
+  }
+} 

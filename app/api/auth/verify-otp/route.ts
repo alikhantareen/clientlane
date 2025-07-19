@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import crypto from "crypto";
 
 export async function POST(req: NextRequest) {
   try {
@@ -45,9 +46,30 @@ export async function POST(req: NextRequest) {
     });
     
     console.log("🎉 User verified successfully:", email);
-    return NextResponse.json({ message: "OTP has been verified successfully." }, { status: 200 });
-  } catch (err) {
-    console.error("❌ Error in verify-otp:", err);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    
+    // For forgot password flow, generate a secure reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+    
+    // Delete any existing reset tokens for this email
+    await prisma.passwordResetToken.deleteMany({ where: { email } });
+    
+    // Create new reset token
+    await prisma.passwordResetToken.create({
+      data: {
+        email,
+        token: resetToken,
+        expiresAt,
+      },
+    });
+    
+    return NextResponse.json({ 
+      message: "OTP verified successfully",
+      resetToken, // Only return token for forgot-password flow
+      email 
+    });
+  } catch (error) {
+    console.error("❌ Error in verify-otp:", error);
+    return NextResponse.json({ error: "Failed to verify OTP" }, { status: 500 });
   }
 } 
