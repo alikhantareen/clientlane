@@ -111,11 +111,11 @@ export default function AllPortalsPage() {
   ) {
     setLoading(true);
 
-    // Use passed values or fall back to current state
-    const finalSearchVal = searchVal !== undefined ? searchVal : search;
-    const finalStatusVal = statusVal !== undefined ? statusVal : status;
-    const finalDateRangeVal =
-      dateRangeVal !== undefined ? dateRangeVal : dateRange;
+    // If any filter parameter is passed, use all passed values; otherwise use current state
+    const usePassedValues = searchVal !== undefined;
+    const finalSearchVal = usePassedValues ? searchVal : search;
+    const finalStatusVal = usePassedValues ? statusVal : status;
+    const finalDateRangeVal = usePassedValues ? dateRangeVal : dateRange;
     const params = new URLSearchParams({
       page: String(pageNum),
       limit: String(limit),
@@ -204,62 +204,63 @@ export default function AllPortalsPage() {
 
       {/* Portal Filters Section */}
       <section className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3 mb-6 w-full">
-        {/* Search Bar */}
-        <div className="flex h-10 items-center bg-[#f5f5f5] rounded-md px-4 py-2 min-w-0 flex-1 sm:min-w-[220px] sm:max-w-xs border border-[#ececec]">
-          <Search className="w-4 h-4 mr-2 text-gray-500 flex-shrink-0" />
-          <Input
-            className="bg-transparent border-none shadow-none focus:ring-0 focus-visible:ring-0 p-0 text-sm h-6"
-            placeholder="Search portals..."
-            value={search}
-            onChange={handleSearchChange}
-            style={{ boxShadow: "none" }}
-          />
-        </div>
-        {/* Date Range Picker */}
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="ghost"
-              className="flex items-center bg-[#f5f5f5] rounded-md px-4 py-2 text-sm font-normal text-gray-700 border border-[#ececec] h-10 min-w-0 sm:min-w-[150px] justify-start"
-              type="button"
-            >
-              <CalendarIcon className="w-4 h-4 mr-2 text-gray-500 flex-shrink-0" />
-              <span className="truncate">
-                {dateRange?.from && dateRange?.to
-                  ? `${format(dateRange.from, "MMM d, yyyy")} - ${format(dateRange.to, "MMM d, yyyy")}`
-                  : "Choose date range"}
-              </span>
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="p-0 w-auto" align="start">
-            <Calendar
-              mode="range"
-              selected={dateRange}
-              onSelect={handleDateRangeChange}
-              numberOfMonths={2}
+        <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3 flex-1">
+          {/* Search Bar */}
+          <div className="flex h-10 items-center bg-[#f5f5f5] rounded-md px-4 py-2 min-w-0 flex-1 sm:min-w-[220px] sm:max-w-xs border border-[#ececec]">
+            <Search className="w-4 h-4 mr-2 text-gray-500 flex-shrink-0" />
+            <Input
+              className="bg-transparent border-none shadow-none focus:ring-0 focus-visible:ring-0 p-0 text-sm h-6"
+              placeholder="Search portals..."
+              value={search}
+              onChange={handleSearchChange}
+              style={{ boxShadow: "none" }}
             />
-          </PopoverContent>
-        </Popover>
-        {/* Status MultiSelect */}
-        <div className="min-w-0 sm:min-w-[120px] h-10">
-          <StatusMultiSelect
-            options={[
-              { label: "Active", value: "active" },
-              { label: "Pending", value: "pending" },
-              { label: "Archived", value: "archived" },
-            ]}
-            value={status}
-            onChange={handleStatusChange}
-            placeholder="Select status"
-          />
+          </div>
+          {/* Date Range Picker */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="ghost"
+                className="flex items-center bg-[#f5f5f5] rounded-md px-4 py-2 text-sm font-normal text-gray-700 border border-[#ececec] h-10 min-w-0 sm:min-w-[150px] justify-start"
+                type="button"
+              >
+                <CalendarIcon className="w-4 h-4 mr-2 text-gray-500 flex-shrink-0" />
+                <span className="truncate">
+                  {dateRange?.from && dateRange?.to
+                    ? `${format(dateRange.from, "MMM d, yyyy")} - ${format(dateRange.to, "MMM d, yyyy")}`
+                    : "Choose date range"}
+                </span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="p-0 w-auto" align="start">
+              <Calendar
+                mode="range"
+                selected={dateRange}
+                onSelect={handleDateRangeChange}
+                numberOfMonths={2}
+              />
+            </PopoverContent>
+          </Popover>
+          {/* Status MultiSelect */}
+          <div className="min-w-0 sm:min-w-[120px] h-10">
+            <StatusMultiSelect
+              options={[
+                { label: "Active", value: "active" },
+                { label: "Pending", value: "pending" },
+                { label: "Archived", value: "archived" },
+              ]}
+              value={status}
+              onChange={handleStatusChange}
+              placeholder="Select status"
+            />
+          </div>
         </div>
         {/* Clear Filters */}
         {anyFilterApplied && (
           <button
-            className="sm:ml-auto text-sm text-gray-500 hover:text-black underline whitespace-nowrap italic cursor-pointer self-start sm:self-center"
+            className="text-sm text-gray-500 hover:text-black underline whitespace-nowrap italic cursor-pointer h-10 px-3 flex items-center justify-center self-start sm:self-center"
             onClick={clearFilters}
             type="button"
-            style={{ minHeight: 40 }}
           >
             Clear all filters
           </button>
@@ -322,6 +323,11 @@ export default function AllPortalsPage() {
                   onShareLink={() => {}}
                   onView={() => router.push(`/portal/${portal.id}`)}
                   dueDate={portal.dueDate ? format(new Date(portal.dueDate), "MMM d, yyyy") : "-"}
+                  userImage={
+                    user?.role === "freelancer"
+                      ? portal.clientImage
+                      : portal.freelancerImage
+                  }
                 />
               ))}
         </div>
