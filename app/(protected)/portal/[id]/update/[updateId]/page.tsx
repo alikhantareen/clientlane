@@ -101,6 +101,8 @@ export default function UpdateDetailsPage() {
   const [replyToDelete, setReplyToDelete] = useState<Reply | null>(null);
   const [isDeletingReply, setIsDeletingReply] = useState(false);
   const [filesToRemove, setFilesToRemove] = useState<string[]>([]); // Track files to remove by ID
+  const [maxFileSizeMB, setMaxFileSizeMB] = useState(5); // Default to 5MB, will be updated
+  const [isLoadingLimits, setIsLoadingLimits] = useState(true);
 
   // Tiptap editor configuration for replies
   const replyEditor = useEditor({
@@ -152,6 +154,28 @@ export default function UpdateDetailsPage() {
     fetchUpdate();
   }, [updateId]);
 
+  // Fetch user's plan limits on component mount
+  useEffect(() => {
+    const fetchPlanLimits = async () => {
+      try {
+        setIsLoadingLimits(true);
+        // Fetch portal-specific limits instead of user limits
+        const response = await fetch(`/api/plan-limits?portalId=${portalId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setMaxFileSizeMB(data.plan.limits.maxFileSizeMB);
+        }
+      } catch (error) {
+        console.error('Error fetching plan limits:', error);
+        // Keep default 5MB if fetch fails
+      } finally {
+        setIsLoadingLimits(false);
+      }
+    };
+
+    fetchPlanLimits();
+  }, [portalId]);
+
   const handleBackClick = () => {
     router.push(`/portal/${portalId}`);
   };
@@ -160,7 +184,6 @@ export default function UpdateDetailsPage() {
     const files = Array.from(event.target.files || []);
     
     // Check file size limits before adding to state
-    const maxFileSizeMB = 5; // Free plan limit
     const maxFileSizeBytes = maxFileSizeMB * 1024 * 1024;
     
     const validFiles = files.filter(file => {
@@ -182,7 +205,12 @@ export default function UpdateDetailsPage() {
     e.preventDefault();
 
     const content = replyEditor?.getHTML() || "";
-    if (!content.trim()) {
+    
+    // Strip HTML tags and check for actual text content
+    const textContent = content.replace(/<[^>]*>/g, '').trim();
+    
+    if (!textContent && replyFiles.length === 0) {
+      toast.error("Please enter some content or attach a file before sending.");
       return;
     }
 
@@ -401,7 +429,7 @@ export default function UpdateDetailsPage() {
 
   // Skeleton component for loading state
   const UpdateDetailsSkeleton = () => (
-    <div className="w-full mx-auto p-6 space-y-6 animate-pulse">
+    <div className="max-w-4xl mx-auto p-6 space-y-6 animate-pulse">
       {/* Header Skeleton */}
       <div className="flex items-center gap-4 mb-6">
         <div className="flex items-center gap-2">
@@ -411,7 +439,7 @@ export default function UpdateDetailsPage() {
       </div>
 
       {/* Update Title Skeleton */}
-      <div className="bg-white rounded-lg shadow-sm border p-6">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="h-8 w-3/4 bg-gray-300 rounded mb-2"></div>
         <div className="flex items-center gap-3">
           <div className="h-4 w-16 bg-gray-300 rounded"></div>
@@ -421,12 +449,12 @@ export default function UpdateDetailsPage() {
       </div>
 
       {/* Thread Root Skeleton */}
-      <div className="bg-white rounded-lg shadow-sm border">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
         <div className="p-6">
           <div className="flex items-start gap-4">
-            <div className="w-10 h-10 bg-gray-300 rounded-full flex-shrink-0"></div>
+            <div className="w-12 h-12 bg-gray-300 rounded-full flex-shrink-0"></div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-3">
+              <div className="flex items-center gap-3 mb-4">
                 <div className="h-4 w-20 bg-gray-300 rounded"></div>
                 <div className="h-3 w-16 bg-gray-300 rounded"></div>
               </div>
@@ -436,10 +464,10 @@ export default function UpdateDetailsPage() {
                 <div className="h-4 w-3/4 bg-gray-300 rounded"></div>
               </div>
               {/* Attachments Skeleton */}
-              <div className="mt-4 space-y-2">
+              <div className="mt-6 space-y-3">
                 <div className="h-4 w-24 bg-gray-300 rounded"></div>
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2 p-2 bg-gray-50 rounded">
+                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
                     <div className="w-4 h-4 bg-gray-300 rounded"></div>
                     <div className="h-3 w-32 bg-gray-300 rounded flex-1"></div>
                     <div className="h-3 w-12 bg-gray-300 rounded"></div>
@@ -454,12 +482,12 @@ export default function UpdateDetailsPage() {
       {/* Replies Skeleton */}
       <div className="space-y-4">
         {[1, 2].map((i) => (
-          <div key={i} className="bg-gray-50 rounded-lg border">
-            <div className="p-4">
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 bg-gray-300 rounded-full flex-shrink-0"></div>
+          <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div className="p-6">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 bg-gray-300 rounded-full flex-shrink-0"></div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center gap-3 mb-3">
                     <div className="h-4 w-16 bg-gray-300 rounded"></div>
                     <div className="h-3 w-14 bg-gray-300 rounded"></div>
                   </div>
@@ -511,7 +539,7 @@ export default function UpdateDetailsPage() {
         <Button
           variant="ghost"
           onClick={handleBackClick}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 cursor-pointer"
+          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors duration-200 cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to updates
@@ -519,13 +547,13 @@ export default function UpdateDetailsPage() {
       </div>
 
       {/* Update Title */}
-      <div className="bg-white rounded-lg shadow-sm border p-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h1 className="text-3xl font-bold text-gray-900 mb-3 leading-tight">
           {update.title}
         </h1>
         <div className="flex items-center gap-3 text-sm text-gray-500">
-          <span>by {update.user.name}</span>
-          <span>•</span>
+          <span className="font-medium text-gray-700">by {update.user.name}</span>
+          <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
           <span>
             {formatDistanceToNow(new Date(update.created_at), {
               addSuffix: true,
@@ -535,64 +563,64 @@ export default function UpdateDetailsPage() {
       </div>
 
       {/* Thread Root - Original Update */}
-      <div className="bg-white rounded-lg shadow-sm border">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
         <div className="p-6">
           <div className="flex items-start gap-4">
-            <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center flex-shrink-0">
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm">
               {update.user.image ? (
                 <img
                   src={update.user.image}
                   alt={update.user.name}
-                  className="w-10 h-10 rounded-full object-cover"
+                  className="w-12 h-12 rounded-full object-cover border-2 border-white"
                 />
               ) : (
-                <span className="text-white text-sm font-medium">
+                <span className="text-white text-sm font-semibold">
                   {getUserInitials(update.user.name)}
                 </span>
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="font-medium text-gray-900">
+              <div className="flex items-center gap-3 mb-4">
+                <span className="font-semibold text-gray-900 text-sm">
                   {update.user.name}
                 </span>
-                <span className="text-sm text-gray-500">
+                <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
                   {formatDistanceToNow(new Date(update.created_at), {
                     addSuffix: true,
                   })}
                 </span>
               </div>
-              <div className="prose prose-sm max-w-none text-sm [&_p]:mb-3 [&_strong]:font-bold [&_em]:italic [&_ul]:list-disc [&_ol]:list-decimal [&_li]:ml-6 [&_a]:text-blue-600 [&_a]:underline">
+              <div className="prose prose-sm max-w-none text-gray-700 [&_p]:mb-3 [&_strong]:font-bold [&_em]:italic [&_ul]:list-disc [&_ol]:list-decimal [&_li]:ml-6 [&_a]:text-blue-600 [&_a]:underline [&_a]:hover:text-blue-800">
                 <div dangerouslySetInnerHTML={{ __html: update.content }} />
               </div>
               {/* Files */}
               {update.files.length > 0 && (
-                <div className="mt-4 space-y-2">
-                  <p className="text-sm font-medium text-gray-600">
-                    Attachments:
+                <div className="mt-6 space-y-3">
+                  <p className="text-sm font-semibold text-gray-700">
+                    Attachments ({update.files.length})
                   </p>
                   <div className="space-y-2">
                     {update.files.map((file) => (
                       <div
                         key={file.id}
-                        className="flex items-center gap-2 p-2 bg-gray-50 rounded"
+                        className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors duration-200"
                       >
-                        <Paperclip className="w-4 h-4 text-gray-500" />
+                        <Paperclip className="w-4 h-4 text-gray-500 flex-shrink-0" />
                         <a
                           href={file.file_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-sm text-blue-600 hover:text-blue-800 underline flex-1"
+                          className="text-sm text-blue-600 hover:text-blue-800 font-medium flex-1 truncate"
                         >
                           {file.file_name}
                         </a>
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded-full border">
                           {formatFileSize(file.file_size)}
                         </span>
                         <a
                           href={file.file_url}
                           download
-                          className="text-gray-500 hover:text-gray-700"
+                          className="text-gray-500 hover:text-gray-700 p-1 rounded hover:bg-gray-200 transition-colors duration-200"
                         >
                           <Download className="w-4 h-4" />
                         </a>
@@ -609,64 +637,64 @@ export default function UpdateDetailsPage() {
       {/* Replies Section */}
       <div className="space-y-4">
         {update.replies.map((reply) => (
-          <div key={reply.id} className="bg-gray-50 rounded-lg border">
-            <div className="p-4">
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center flex-shrink-0">
+          <div key={reply.id} className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200">
+            <div className="p-6">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-blue-600 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm">
                   {reply.user.image ? (
                     <img
                       src={reply.user.image}
                       alt={reply.user.name}
-                      className="w-8 h-8 rounded-full object-cover"
+                      className="w-10 h-10 rounded-full object-cover border-2 border-white"
                     />
                   ) : (
-                    <span className="text-white text-xs font-medium">
+                    <span className="text-white text-sm font-semibold">
                       {getUserInitials(reply.user.name)}
                     </span>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="font-medium text-gray-900">
+                  <div className="flex items-center gap-3 mb-3">
+                    <span className="font-semibold text-gray-900 text-sm">
                       {reply.user.name}
                     </span>
-                    <span className="text-sm text-gray-500">
+                    <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
                       {formatDistanceToNow(new Date(reply.created_at), {
                         addSuffix: true,
                       })}
                     </span>
                   </div>
-                  <div className="prose prose-sm max-w-none text-sm [&_p]:mb-3 [&_strong]:font-bold [&_em]:italic [&_ul]:list-disc [&_ol]:list-decimal [&_li]:ml-6 [&_a]:text-blue-600 [&_a]:underline">
+                  <div className="prose prose-sm max-w-none text-gray-700 [&_p]:mb-3 [&_strong]:font-bold [&_em]:italic [&_ul]:list-disc [&_ol]:list-decimal [&_li]:ml-6 [&_a]:text-blue-600 [&_a]:underline [&_a]:hover:text-blue-800">
                     <div dangerouslySetInnerHTML={{ __html: reply.content }} />
                   </div>
                   {/* Reply Files */}
                   {reply.files.length > 0 && (
-                    <div className="mt-3 space-y-2">
-                      <p className="text-sm font-medium text-gray-600">
-                        Attachments:
+                    <div className="mt-4 space-y-3">
+                      <p className="text-sm font-semibold text-gray-700">
+                        Attachments ({reply.files.length})
                       </p>
-                      <div className="space-y-1">
+                      <div className="space-y-2">
                         {reply.files.map((file) => (
                           <div
                             key={file.id}
-                            className="flex items-center gap-2 p-2 bg-white rounded"
+                            className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors duration-200"
                           >
-                            <Paperclip className="w-4 h-4 text-gray-500" />
+                            <Paperclip className="w-4 h-4 text-gray-500 flex-shrink-0" />
                             <a
                               href={file.file_url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-sm text-blue-600 hover:text-blue-800 underline flex-1"
+                              className="text-sm text-blue-600 hover:text-blue-800 font-medium flex-1 truncate"
                             >
                               {file.file_name}
                             </a>
-                            <span className="text-xs text-gray-500">
+                            <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded-full border">
                               {formatFileSize(file.file_size)}
                             </span>
                             <a
                               href={file.file_url}
                               download
-                              className="text-gray-500 hover:text-gray-700"
+                              className="text-gray-500 hover:text-gray-700 p-1 rounded hover:bg-gray-200 transition-colors duration-200"
                             >
                               <Download className="w-4 h-4" />
                             </a>
@@ -683,25 +711,25 @@ export default function UpdateDetailsPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="w-8 h-8 p-0 text-gray-500 hover:text-gray-700 cursor-pointer"
+                        className="w-8 h-8 p-0 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors duration-200"
                       >
-                        <MoreVertical className="w-4 h-4 cursor-pointer" />
+                        <MoreVertical className="w-4 h-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                    <DropdownMenuContent align="end" className="w-48">
                       <DropdownMenuItem
                         onClick={() => handleEditReply(reply)}
-                        className="cursor-pointer"
+                        className="flex items-center gap-3 cursor-pointer py-2"
                       >
-                        <Edit3 className="w-4 h-4 mr-2 cursor-pointer" />
-                        Edit
+                        <Edit3 className="w-4 h-4" />
+                        <span>Edit Reply</span>
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={() => openDeleteDialog(reply)}
-                        className="text-red-600 hover:text-red-700 cursor-pointer"
+                        className="flex items-center gap-3 cursor-pointer text-red-600 focus:text-red-600 py-2"
                       >
-                        <Trash2 className="w-4 h-4 mr-2 cursor-pointer" />
-                        Delete
+                        <Trash2 className="w-4 h-4" />
+                        <span>Delete Reply</span>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -713,13 +741,13 @@ export default function UpdateDetailsPage() {
       </div>
 
       {/* Reply Input Box - Fixed to bottom */}
-      <div className="fixed -bottom-6 left-0 right-0 bg-white border-t z-50">
+      <div className="fixed -bottom-6 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
         <div className="max-w-4xl mx-auto px-6 py-4">
           {/* Edit mode indicator */}
           {editingReply && (
-            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-blue-800">
+                <span className="text-sm font-semibold text-blue-800">
                   Editing reply by {editingReply.user.name}
                 </span>
                 <Button
@@ -727,40 +755,40 @@ export default function UpdateDetailsPage() {
                   variant="ghost"
                   size="sm"
                   onClick={handleCancelEdit}
-                  className="text-blue-700 hover:text-blue-800 cursor-pointer"
+                  className="text-blue-700 hover:text-blue-800 hover:bg-blue-100 transition-colors duration-200"
                 >
                   Cancel
                 </Button>
               </div>
               {/* Show existing files from the reply being edited */}
               {editingReply.files.length > 0 && (
-                <div className="mt-2 space-y-1">
-                  <p className="text-xs text-blue-700">Existing attachments:</p>
+                <div className="mt-3 space-y-2">
+                  <p className="text-xs font-medium text-blue-700">Existing attachments:</p>
                   {editingReply.files.map((file) => {
                     const isMarkedForRemoval = filesToRemove.includes(file.id);
                     return (
                       <div
                         key={file.id}
-                        className={`flex items-center gap-2 p-2 rounded ${
+                        className={`flex items-center gap-3 p-3 rounded-lg border ${
                           isMarkedForRemoval
-                            ? "bg-red-50 border border-red-200 text-red-600"
-                            : "bg-white border border-blue-200 text-blue-600"
+                            ? "bg-red-50 border-red-200 text-red-600"
+                            : "bg-white border-blue-200 text-blue-600"
                         }`}
                       >
-                        <Paperclip className="w-3 h-3" />
+                        <Paperclip className="w-4 h-4 flex-shrink-0" />
                         <span
-                          className={`flex-1 text-xs ${isMarkedForRemoval ? "line-through" : ""}`}
+                          className={`flex-1 text-sm font-medium ${isMarkedForRemoval ? "line-through" : ""}`}
                         >
                           {file.file_name}
                         </span>
-                        <span className="text-xs opacity-75">
+                        <span className="text-xs opacity-75 bg-white px-2 py-1 rounded-full">
                           ({formatFileSize(file.file_size)})
                         </span>
                         {isMarkedForRemoval ? (
                           <button
                             type="button"
                             onClick={() => handleRestoreExistingFile(file.id)}
-                            className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                            className="text-xs text-blue-600 hover:text-blue-800 font-semibold px-2 py-1 rounded hover:bg-blue-100 transition-colors duration-200"
                           >
                             Restore
                           </button>
@@ -768,7 +796,7 @@ export default function UpdateDetailsPage() {
                           <button
                             type="button"
                             onClick={() => handleRemoveExistingFile(file.id)}
-                            className="text-xs text-red-600 hover:text-red-800 font-medium"
+                            className="text-xs text-red-600 hover:text-red-800 font-semibold px-2 py-1 rounded hover:bg-red-100 transition-colors duration-200"
                           >
                             Remove
                           </button>
@@ -781,30 +809,30 @@ export default function UpdateDetailsPage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmitReply} className="space-y-3">
+          <form onSubmit={handleSubmitReply} className="space-y-4">
             {/* Selected Files */}
             {replyFiles.length > 0 && (
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-gray-600">
+              <div className="space-y-3">
+                <p className="text-sm font-semibold text-gray-700">
                   {editingReply ? "Additional files:" : "Selected files:"}
                 </p>
-                <div className="space-y-1">
+                <div className="space-y-2">
                   {replyFiles.map((file, index) => (
                     <div
                       key={index}
-                      className="flex items-center gap-2 p-2 bg-gray-50 rounded"
+                      className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200"
                     >
-                      <Paperclip className="w-4 h-4 text-gray-500" />
-                      <span className="text-sm text-gray-700 flex-1">
+                      <Paperclip className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                      <span className="text-sm text-gray-700 flex-1 font-medium">
                         {file.name}
                       </span>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded-full border">
                         {formatFileSize(file.size)}
                       </span>
                       <button
                         type="button"
                         onClick={() => removeFile(index)}
-                        className="text-red-500 hover:text-red-700 text-xs"
+                        className="text-red-500 hover:text-red-700 text-xs font-semibold px-2 py-1 rounded hover:bg-red-100 transition-colors duration-200"
                       >
                         Remove
                       </button>
@@ -816,16 +844,16 @@ export default function UpdateDetailsPage() {
 
             {/* Reply Input */}
             <div className="flex gap-3">
-              <div className="flex-1 border rounded-lg overflow-hidden bg-white">
+              <div className="flex-1 border border-gray-300 rounded-xl overflow-hidden bg-white shadow-sm">
                 <ReplyEditorToolbar editor={replyEditor} />
                 <div className="relative">
                   <EditorContent
                     editor={replyEditor}
-                    className="min-h-[60px] prose prose-sm max-w-none [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-[60px] [&_.ProseMirror]:p-3 [&_.ProseMirror_ul]:list-disc [&_.ProseMirror_ol]:list-decimal [&_.ProseMirror_li]:ml-6"
+                    className="min-h-[80px] prose prose-sm max-w-none [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-[80px] [&_.ProseMirror]:p-4 [&_.ProseMirror_ul]:list-disc [&_.ProseMirror_ol]:list-decimal [&_.ProseMirror_li]:ml-6"
                   />
                   {/* Placeholder when editor is empty */}
                   {replyEditor && replyEditor.isEmpty && (
-                    <div className="absolute top-3 left-3 text-gray-400 pointer-events-none">
+                    <div className="absolute top-4 left-4 text-gray-400 pointer-events-none">
                       {editingReply
                         ? "Edit your reply..."
                         : "Write your reply..."}
@@ -833,7 +861,7 @@ export default function UpdateDetailsPage() {
                   )}
                 </div>
               </div>
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-3">
                 <input
                   type="file"
                   id="reply-files"
@@ -844,20 +872,27 @@ export default function UpdateDetailsPage() {
                 />
                 <label
                   htmlFor="reply-files"
-                  className="cursor-pointer p-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center justify-center"
+                  className="cursor-pointer p-3 border border-gray-300 rounded-xl hover:bg-gray-50 flex items-center justify-center transition-colors duration-200 shadow-sm"
                 >
-                  <Paperclip className="w-4 h-4 text-gray-500" />
+                  <Paperclip className="w-5 h-5 text-gray-500" />
                 </label>
                 <Button
                   type="submit"
-                  disabled={!replyEditor?.getHTML().trim() || isSubmitting}
-                  className={`px-4 py-2 rounded-lg flex items-center gap-2 bg-blue-600 text-white hover:bg-blue-700 cursor-pointer`}
+                  disabled={
+                    (() => {
+                      const content = replyEditor?.getHTML() || "";
+                      const textContent = content.replace(/<[^>]*>/g, '').trim();
+                      return !textContent && replyFiles.length === 0;
+                    })() || isSubmitting
+                  }
+                  className="px-6 py-3 rounded-xl flex items-center gap-2 bg-blue-600 text-white hover:bg-blue-700 transition-colors duration-200 shadow-sm font-semibold cursor-pointer"
                 >
                   {isSubmitting ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
                     <Send className="w-4 h-4" />
                   )}
+                  {editingReply ? "Update" : "Send"}
                 </Button>
               </div>
             </div>

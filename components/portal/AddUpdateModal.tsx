@@ -34,15 +34,11 @@ interface AddUpdateModalProps {
 export function AddUpdateModal({ isOpen, onClose, portalId, editUpdate }: AddUpdateModalProps) {
   const [title, setTitle] = useState("");
   const [files, setFiles] = useState<File[]>([]);
-  const [existingFiles, setExistingFiles] = useState<Array<{
-    id: string;
-    file_name: string;
-    file_url: string;
-    file_type: string;
-    file_size: number;
-  }>>([]);
+  const [existingFiles, setExistingFiles] = useState<any[]>([]);
   const [filesToRemove, setFilesToRemove] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [maxFileSizeMB, setMaxFileSizeMB] = useState(5); // Default to 5MB, will be updated
+  const [isLoadingLimits, setIsLoadingLimits] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Tiptap editor configuration
@@ -86,11 +82,34 @@ export function AddUpdateModal({ isOpen, onClose, portalId, editUpdate }: AddUpd
     setFilesToRemove([]);
   }, [editUpdate, editor]);
 
+  // Fetch user's plan limits on component mount
+  useEffect(() => {
+    const fetchPlanLimits = async () => {
+      try {
+        setIsLoadingLimits(true);
+        // Fetch portal-specific limits instead of user limits
+        const response = await fetch(`/api/plan-limits?portalId=${portalId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setMaxFileSizeMB(data.plan.limits.maxFileSizeMB);
+        }
+      } catch (error) {
+        console.error('Error fetching plan limits:', error);
+        // Keep default 5MB if fetch fails
+      } finally {
+        setIsLoadingLimits(false);
+      }
+    };
+
+    if (isOpen) {
+      fetchPlanLimits();
+    }
+  }, [isOpen, portalId]);
+
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(event.target.files || []);
     
     // Check file size limits before adding to state
-    const maxFileSizeMB = 5; // Free plan limit
     const maxFileSizeBytes = maxFileSizeMB * 1024 * 1024;
     
     const validFiles = selectedFiles.filter(file => {

@@ -60,10 +60,12 @@ export default function PortalCreateDialog({
   onSuccess,
   onPortalCreated,
 }: PortalCreateDialogProps) {
+  const { data: session } = useSession();
   const [loading, setLoading] = useState(false);
   const [canCreatePortal, setCanCreatePortal] = useState(true);
   const [limitMessage, setLimitMessage] = useState("");
-  const { data: session } = useSession();
+  const [maxFileSizeMB, setMaxFileSizeMB] = useState(5); // Default to 5MB, will be updated
+  const [isLoadingLimits, setIsLoadingLimits] = useState(true);
   const [form, setForm] = useState<PortalFormValues>({
     portalName: initialValues?.portalName || "",
     clientEmail: initialValues?.clientEmail || "",
@@ -101,15 +103,28 @@ export default function PortalCreateDialog({
       if (!session?.user) return;
 
       try {
-        const response = await fetch("/api/plan-limits/check-portal-creation");
-        const data = await response.json();
+        setIsLoadingLimits(true);
+        const [portalResponse, planResponse] = await Promise.all([
+          fetch("/api/plan-limits/check-portal-creation"),
+          fetch("/api/plan-limits")
+        ]);
+        
+        const portalData = await portalResponse.json();
+        const planData = await planResponse.json();
 
-        setCanCreatePortal(data.allowed);
-        if (!data.allowed) {
-          setLimitMessage(data.reason || "Unable to create portal");
+        setCanCreatePortal(portalData.allowed);
+        if (!portalData.allowed) {
+          setLimitMessage(portalData.reason || "Unable to create portal");
+        }
+
+        // Set file size limit from plan
+        if (planResponse.ok) {
+          setMaxFileSizeMB(planData.plan.limits.maxFileSizeMB);
         }
       } catch (error) {
         console.error("Error checking portal limits:", error);
+      } finally {
+        setIsLoadingLimits(false);
       }
     };
 
@@ -126,7 +141,6 @@ export default function PortalCreateDialog({
       const file = files[0];
       if (file) {
         // Check file size limits for thumbnail
-        const maxFileSizeMB = 5; // Free plan limit
         const maxFileSizeBytes = maxFileSizeMB * 1024 * 1024;
         
         if (file.size > maxFileSizeBytes) {

@@ -267,6 +267,70 @@ export async function canUserUploadFiles(userId: string, fileSizeBytes: number):
 }
 
 /**
+ * Check if user can upload files with given total size based on portal context
+ * This is used when clients upload to portals - they inherit the portal's freelancer plan limits
+ */
+export async function canUserUploadFilesToPortal(userId: string, fileSizeBytes: number, portalId: string): Promise<PlanLimitCheckResult> {
+  try {
+    // Get the portal and its freelancer
+    const portal = await prisma.portal.findUnique({
+      where: { id: portalId },
+      include: {
+        freelancer: {
+          select: { id: true }
+        }
+      }
+    });
+
+    if (!portal) {
+      return {
+        allowed: false,
+        reason: 'Portal not found.',
+        upgradeRequired: false
+      };
+    }
+
+    // Get the freelancer's plan info (this is what determines the portal's limits)
+    const freelancerPlanInfo = await getUserPlanInfo(portal.freelancer.id);
+    const freelancerUsage = await getUserPlanUsage(portal.freelancer.id);
+    
+    const fileSizeMB = bytesToMB(fileSizeBytes);
+    
+    // Check if storage would exceed freelancer's limit
+    if (freelancerUsage.storage.limitMB !== null && wouldExceedLimit(freelancerUsage.storage.currentMB, fileSizeMB, freelancerUsage.storage.limitMB)) {
+      return {
+        allowed: false,
+        reason: `This upload would exceed the portal's storage limit. The portal is using ${freelancerUsage.storage.formattedCurrent} of ${freelancerUsage.storage.formattedLimit}.`,
+        upgradeRequired: true,
+        currentUsage: freelancerUsage.storage.currentMB,
+        limit: freelancerUsage.storage.limitMB
+      };
+    }
+
+    // Check individual file size limit based on freelancer's plan
+    if (fileSizeMB > freelancerPlanInfo.limits.maxFileSizeMB) {
+      return {
+        allowed: false,
+        reason: `File size (${formatStorageSize(fileSizeMB)}) exceeds this portal's limit of ${formatStorageSize(freelancerPlanInfo.limits.maxFileSizeMB)}.`,
+        upgradeRequired: true,
+        currentUsage: fileSizeMB,
+        limit: freelancerPlanInfo.limits.maxFileSizeMB
+      };
+    }
+
+    return { allowed: true };
+
+  } catch (error) {
+    console.error('Error checking portal file upload limit:', error);
+    return {
+      allowed: false,
+      reason: 'Unable to verify portal upload limits. Please try again.',
+      upgradeRequired: false
+    };
+  }
+}
+
+/**
  * Check if user can invite team members (future feature)
  */
 export async function canUserInviteTeamMember(userId: string): Promise<PlanLimitCheckResult> {
@@ -442,6 +506,34 @@ export async function isUserOverLimits(userId: string): Promise<{
       overLimitTypes: [],
       message: ''
     };
+  }
+}
+
+/**
+ * Get portal-specific plan limits for uploads
+ * This returns the freelancer's plan limits that apply to the portal
+ */
+export async function getPortalPlanLimits(portalId: string): Promise<PlanLimits | null> {
+  try {
+    const portal = await prisma.portal.findUnique({
+      where: { id: portalId },
+      include: {
+        freelancer: {
+          select: { id: true }
+        }
+      }
+    });
+
+    if (!portal) {
+      return null;
+    }
+
+    const freelancerPlanInfo = await getUserPlanInfo(portal.freelancer.id);
+    return freelancerPlanInfo.limits;
+
+  } catch (error) {
+    console.error('Error getting portal plan limits:', error);
+    return null;
   }
 }
 

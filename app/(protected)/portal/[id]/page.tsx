@@ -266,13 +266,48 @@ export default function PortalDetailPage() {
                   )}
                 </div>
 
-                {/* Client Initials Box */}
+                {/* Client/Freelancer Avatar Box */}
                 <div className="flex-shrink-0 flex items-center gap-3">
                   <div className="flex flex-col items-center">
-                    <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white rounded-full flex items-center justify-center">
-                      <span className="text-black font-bold text-sm sm:text-lg">
-                        {portal.initials}
-                      </span>
+                    <div className="relative">
+                      {user?.role === "freelancer" ? (
+                        portal.client.image ? (
+                          <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full overflow-hidden shadow-md flex-shrink-0">
+                            <Image
+                              src={portal.client.image}
+                              alt={`${portal.client.name} profile`}
+                              width={64}
+                              height={64}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        ) : (
+                          <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-md">
+                            <span className="text-white font-bold text-sm sm:text-lg">
+                              {portal.initials}
+                            </span>
+                          </div>
+                        )
+                      ) : (
+                        portal.freelancer.image ? (
+                          <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full overflow-hidden shadow-md flex-shrink-0">
+                            <Image
+                              src={portal.freelancer.image}
+                              alt={`${portal.freelancer.name} profile`}
+                              width={64}
+                              height={64}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        ) : (
+                          <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-md">
+                            <span className="text-white font-bold text-sm sm:text-lg">
+                              {portal.initials}
+                            </span>
+                          </div>
+                        )
+                      )}
+                      <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white" />
                     </div>
                     <span className="text-xs text-gray-300 mt-1 text-center">
                       {user?.role === "freelancer"

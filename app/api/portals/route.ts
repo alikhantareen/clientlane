@@ -89,8 +89,8 @@ export async function GET(req: NextRequest) {
         orderBy: { updated_at: "desc" },
         where,
         include: {
-          client: { select: { name: true, email: true } },
-          freelancer: { select: { name: true, email: true } },
+          client: { select: { name: true, email: true, image: true } },
+          freelancer: { select: { name: true, email: true, image: true } },
           updates: { 
             select: { id: true },
             where: { parent_update_id: null } // Only count root updates, not replies
@@ -109,6 +109,8 @@ export async function GET(req: NextRequest) {
       thumbnail_url: portal.thumbnail_url,
       clientName: portal.client?.name || "",
       freelancerName: portal.freelancer?.name || "",
+      clientImage: portal.client?.image || null,
+      freelancerImage: portal.freelancer?.image || null,
       updated_at: portal.updated_at,
       updatesCount: portal.updates.length,
       dueDate: portal.dueDate || null, // Add dueDate to the response

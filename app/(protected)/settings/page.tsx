@@ -15,29 +15,25 @@ import { useUser } from "@/lib/contexts/UserContext";
 export default function SettingsPage() {
   const { data: session } = useSession();
   const { user, loading: profileLoading, updateUser } = useUser();
-  const [loading, setLoading] = useState(false);
-  const [passwordLoading, setPasswordLoading] = useState(false);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [showRemoveDialog, setShowRemoveDialog] = useState(false);
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  
-  // Profile form state
   const [profileForm, setProfileForm] = useState({
     name: "",
     image: undefined as File | undefined,
   });
-  
-  // Original values to track changes
-  const [originalName, setOriginalName] = useState("");
-  
-  // Password form state
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
   });
+  const [originalName, setOriginalName] = useState("");
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [maxFileSizeMB, setMaxFileSizeMB] = useState(5); // Default to 5MB, will be updated
+  const [isLoadingLimits, setIsLoadingLimits] = useState(true);
+  const [showRemoveDialog, setShowRemoveDialog] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   // Password verification state
   const [passwordState, setPasswordState] = useState<'initial' | 'verified'>('initial');
@@ -67,13 +63,33 @@ export default function SettingsPage() {
     };
   }, [imagePreview]);
   
+  // Fetch user's plan limits on component mount
+  useEffect(() => {
+    const fetchPlanLimits = async () => {
+      try {
+        setIsLoadingLimits(true);
+        const response = await fetch('/api/plan-limits');
+        if (response.ok) {
+          const data = await response.json();
+          setMaxFileSizeMB(data.plan.limits.maxFileSizeMB);
+        }
+      } catch (error) {
+        console.error('Error fetching plan limits:', error);
+        // Keep default 5MB if fetch fails
+      } finally {
+        setIsLoadingLimits(false);
+      }
+    };
+
+    fetchPlanLimits();
+  }, []);
+
   const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, files } = e.target;
     if (type === "file") {
       const file = files?.[0];
       if (file) {
         // Check file size limits for profile image
-        const maxFileSizeMB = 5; // Free plan limit
         const maxFileSizeBytes = maxFileSizeMB * 1024 * 1024;
         
         if (file.size > maxFileSizeBytes) {
@@ -102,7 +118,7 @@ export default function SettingsPage() {
   };
   
   const handleRemoveImage = async () => {
-    setLoading(true);
+    setIsLoading(true);
     
     try {
       const res = await fetch("/api/user", {
@@ -137,13 +153,13 @@ export default function SettingsPage() {
     } catch (err) {
       toast.error("Failed to remove profile image");
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
   
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setIsLoading(true);
     
     try {
       const formData = new FormData();
@@ -178,7 +194,7 @@ export default function SettingsPage() {
     } catch (err) {
       toast.error("Failed to update profile");
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
   
@@ -325,7 +341,7 @@ export default function SettingsPage() {
                       <Button 
                         variant="outline" 
                         onClick={() => setShowRemoveDialog(false)}
-                        disabled={loading}
+                        disabled={isLoading}
                         className="cursor-pointer"
                       >
                         Cancel
@@ -333,10 +349,10 @@ export default function SettingsPage() {
                       <Button 
                         variant="destructive" 
                         onClick={handleRemoveImage}
-                        disabled={loading}
+                        disabled={isLoading}
                         className="cursor-pointer"
                       >
-                        {loading ? "Removing..." : "Remove Image"}
+                        {isLoading ? "Removing..." : "Remove Image"}
                       </Button>
                     </DialogFooter>
                   </DialogContent>
@@ -383,9 +399,9 @@ export default function SettingsPage() {
             <Button 
               type="submit" 
               className="bg-blue-600 text-white hover:bg-blue-700 gap-2 cursor-pointer disabled:cursor-not-allowed"
-              disabled={loading || !hasProfileChanges()}
+              disabled={isLoading || !hasProfileChanges()}
             >
-              {loading ? (
+              {isLoading ? (
                 "Saving..."
               ) : (
                 <>

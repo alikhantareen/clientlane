@@ -74,4 +74,38 @@ export type LoginInput = z.infer<typeof loginSchema>
 export type ResetPasswordRequestInput = z.infer<typeof resetPasswordRequestSchema>
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>
 export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>
-export type UpdateUserInput = z.infer<typeof updateUserSchema> 
+export type UpdateUserInput = z.infer<typeof updateUserSchema>
+
+// Update creation schema
+export const createUpdateSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  content: z.string().min(1, "Content is required"),
+  portalId: z.string().uuid("Invalid portal ID"),
+});
+
+// Update retrieval schema
+export const getUpdatesSchema = z.object({
+  portalId: z.string().uuid("Invalid portal ID"),
+  page: z.string().optional().default("1"),
+  limit: z.string().optional().default("10"),
+  search: z.string().optional(),
+});
+
+// Type exports for updates
+export type CreateUpdateInput = z.infer<typeof createUpdateSchema>
+export type GetUpdatesInput = z.infer<typeof getUpdatesSchema>
+
+// Reply creation schema
+export const createReplySchema = z.object({
+  content: z.string().min(1, "Content is required"),
+});
+
+// Update editing schema
+export const updateSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  content: z.string().min(1, "Content is required"),
+});
+
+// Type exports for replies and updates
+export type CreateReplyInput = z.infer<typeof createReplySchema>
+export type UpdateInput = z.infer<typeof updateSchema> 

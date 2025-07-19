@@ -2,18 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getToken } from "next-auth/jwt";
 import { z } from "zod";
-import { createNotification } from "@/lib/utils/notifications";
-import { canUserUploadFiles } from "@/lib/utils/subscription";
+import { updateUserLastSeen } from "@/lib/utils/helpers";
+import { canUserUploadFiles, canUserUploadFilesToPortal } from "@/lib/utils/subscription";
 import { uploadToBlob, deleteFromBlob, isBlobUrl } from "@/lib/utils/blob";
-
-const createReplySchema = z.object({
-  content: z.string().min(1, "Content is required"),
-});
-
-const updateSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  content: z.string().min(1, "Content is required"),
-});
+import { createReplySchema, updateSchema } from "@/lib/validations/auth";
+import { createNotification } from "@/lib/utils/notifications";
 
 interface RouteParams {
   updateId: string;
@@ -193,7 +186,18 @@ export async function POST(
     // Check file upload limits if there are files
     if (files.length > 0) {
       const totalFileSize = files.reduce((sum, file) => sum + file.size, 0);
-      const uploadCheck = await canUserUploadFiles(token.sub!, totalFileSize);
+      
+      // Determine if user is freelancer or client
+      const isFreelancer = parentUpdate.portal.created_by === token.sub;
+      
+      let uploadCheck;
+      if (isFreelancer) {
+        // Freelancer uploading - use their own plan limits
+        uploadCheck = await canUserUploadFiles(token.sub!, totalFileSize);
+      } else {
+        // Client uploading - use portal's freelancer plan limits
+        uploadCheck = await canUserUploadFilesToPortal(token.sub!, totalFileSize, parentUpdate.portal.id);
+      }
       
       if (!uploadCheck.allowed) {
         return NextResponse.json({ 
@@ -297,8 +301,8 @@ export async function POST(
           user_id: token.sub!,
           type: "reply_created",
           meta: {
-            reply_id: newReply.id,
             parent_update_id: updateId,
+            reply_id: newReply.id,
           },
         },
       });
@@ -308,41 +312,17 @@ export async function POST(
         tx,
         parentUpdate.portal.id,
         token.sub!,
-        "reply_created",
+        "new_comment",
         {
-          updateId: newReply.id,
-          parentUpdateId: updateId,
+          updateId: updateId,
+          replyId: newReply.id,
         }
       );
 
       return newReply;
     });
 
-    // Fetch the complete reply with files
-    const completeReply = await prisma.update.findUnique({
-      where: { id: reply.id },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            image: true,
-          },
-        },
-        files: {
-          select: {
-            id: true,
-            file_name: true,
-            file_url: true,
-            file_type: true,
-            file_size: true,
-          },
-        },
-      },
-    });
-
-    return NextResponse.json({ reply: completeReply });
+    return NextResponse.json({ reply });
 
   } catch (error) {
     console.error("Error creating reply:", error);
@@ -420,7 +400,18 @@ export async function PUT(
     // Check file upload limits if there are files
     if (files.length > 0) {
       const totalFileSize = files.reduce((sum, file) => sum + file.size, 0);
-      const uploadCheck = await canUserUploadFiles(token.sub!, totalFileSize);
+      
+      // Determine if user is freelancer or client
+      const isFreelancer = existingUpdate.portal.created_by === token.sub;
+      
+      let uploadCheck;
+      if (isFreelancer) {
+        // Freelancer uploading - use their own plan limits
+        uploadCheck = await canUserUploadFiles(token.sub!, totalFileSize);
+      } else {
+        // Client uploading - use portal's freelancer plan limits
+        uploadCheck = await canUserUploadFilesToPortal(token.sub!, totalFileSize, existingUpdate.portal.id);
+      }
       
       if (!uploadCheck.allowed) {
         return NextResponse.json({ 
@@ -528,11 +519,11 @@ export async function PUT(
       },
     });
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       update: {
         ...updatedUpdate,
         files: allFiles,
-      }
+      },
     });
 
   } catch (error) {

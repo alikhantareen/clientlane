@@ -2,14 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getToken } from "next-auth/jwt";
 import { z } from "zod";
-import { canUserUploadFiles } from "@/lib/utils/subscription";
-import { createNotification } from "@/lib/utils/notifications";
 import { updateUserLastSeen } from "@/lib/utils/helpers";
+import { canUserUploadFiles, canUserUploadFilesToPortal } from "@/lib/utils/subscription";
 import { uploadToBlob, deleteFromBlob, isBlobUrl } from "@/lib/utils/blob";
-
-const updateReplySchema = z.object({
-  content: z.string().min(1, "Content is required"),
-});
+import { createReplySchema } from "@/lib/validations/auth";
+import { createNotification } from "@/lib/utils/notifications";
 
 interface RouteParams {
   replyId: string;
@@ -26,9 +23,6 @@ export async function PUT(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Update last_seen_at for the user
-    await updateUserLastSeen(token.sub);
-
     const { replyId } = await params;
 
     // Parse form data
@@ -37,32 +31,38 @@ export async function PUT(
     // Extract fields from formData
     const fields: any = {};
     const files: File[] = [];
+    const filesToRemove: string[] = [];
     
     for (const [key, value] of formData.entries()) {
       if (value instanceof File) {
         files.push(value);
+      } else if (key === 'filesToRemove') {
+        try {
+          const parsed = JSON.parse(value as string);
+          filesToRemove.push(...parsed);
+        } catch (e) {
+          // Handle individual file ID
+          filesToRemove.push(value as string);
+        }
       } else {
         fields[key] = value;
       }
     }
 
     // Validate required fields
-    const parsed = updateReplySchema.safeParse(fields);
+    const parsed = createReplySchema.safeParse(fields);
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 });
     }
 
     const { content } = parsed.data;
-    
-    // Parse files to remove if provided
-    const filesToRemove: string[] = fields.filesToRemove ? JSON.parse(fields.filesToRemove) : [];
 
     // Find the reply and verify ownership
-    const reply = await prisma.update.findFirst({
+    const existingReply = await prisma.update.findFirst({
       where: { 
         id: replyId,
         user_id: token.sub, // Only allow editing own replies
-        parent_update_id: { not: null }, // Ensure it's a reply, not a main update
+        parent_update_id: { not: null }, // Must be a reply
       },
       include: {
         files: true,
@@ -76,14 +76,25 @@ export async function PUT(
       },
     });
 
-    if (!reply) {
-      return NextResponse.json({ error: "Reply not found or unauthorized" }, { status: 404 });
+    if (!existingReply) {
+      return NextResponse.json({ error: "Reply not found or you don't have permission to edit it" }, { status: 404 });
     }
 
     // Check file upload limits if there are files
     if (files.length > 0) {
       const totalFileSize = files.reduce((sum, file) => sum + file.size, 0);
-      const uploadCheck = await canUserUploadFiles(token.sub!, totalFileSize);
+      
+      // Determine if user is freelancer or client
+      const isFreelancer = existingReply.portal.created_by === token.sub;
+      
+      let uploadCheck;
+      if (isFreelancer) {
+        // Freelancer uploading - use their own plan limits
+        uploadCheck = await canUserUploadFiles(token.sub!, totalFileSize);
+      } else {
+        // Client uploading - use portal's freelancer plan limits
+        uploadCheck = await canUserUploadFilesToPortal(token.sub!, totalFileSize, existingReply.portal.id);
+      }
       
       if (!uploadCheck.allowed) {
         return NextResponse.json({ 
@@ -114,7 +125,7 @@ export async function PUT(
 
     // Update reply in database transaction
     const updatedReply = await prisma.$transaction(async (tx) => {
-      // Remove files that were marked for removal
+      // Remove files that user requested to remove
       if (filesToRemove.length > 0) {
         const filesToDelete = await tx.file.findMany({
           where: {
@@ -130,6 +141,7 @@ export async function PUT(
           }
         }
 
+        // Delete file records
         await tx.file.deleteMany({
           where: {
             id: { in: filesToRemove },
@@ -138,7 +150,7 @@ export async function PUT(
         });
       }
 
-      // Update the reply content
+      // Update the reply
       const updated = await tx.update.update({
         where: { id: replyId },
         data: {
@@ -158,11 +170,11 @@ export async function PUT(
         },
       });
 
-      // If new files were uploaded, add them
+      // Create file records for new files
       if (uploadedFiles.length > 0) {
         await tx.file.createMany({
           data: uploadedFiles.map(file => ({
-            portal_id: reply.portal.id,
+            portal_id: existingReply.portal.id,
             user_id: token.sub!,
             update_id: replyId,
             file_name: file.file_name,
@@ -176,7 +188,7 @@ export async function PUT(
       return updated;
     });
 
-    // Get all current files for the reply
+    // Get updated files list
     const allFiles = await prisma.file.findMany({
       where: { update_id: replyId },
       select: {
@@ -188,16 +200,11 @@ export async function PUT(
       },
     });
 
-    // Return the updated reply
-    return NextResponse.json({ 
+    return NextResponse.json({
       reply: {
-        id: updatedReply.id,
-        content: updatedReply.content,
-        created_at: updatedReply.created_at,
-        updated_at: updatedReply.updated_at,
-        user: updatedReply.user,
+        ...updatedReply,
         files: allFiles,
-      }
+      },
     });
 
   } catch (error) {

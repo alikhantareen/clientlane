@@ -2,23 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getToken } from "next-auth/jwt";
 import { z } from "zod";
-import { createNotification } from "@/lib/utils/notifications";
-import { canUserUploadFiles } from "@/lib/utils/subscription";
 import { updateUserLastSeen } from "@/lib/utils/helpers";
+import { canUserUploadFiles, canUserUploadFilesToPortal } from "@/lib/utils/subscription";
 import { uploadToBlob } from "@/lib/utils/blob";
-
-const createUpdateSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  content: z.string().min(1, "Content is required"),
-  portalId: z.string().uuid("Invalid portal ID"),
-});
-
-const getUpdatesSchema = z.object({
-  portalId: z.string().uuid("Invalid portal ID"),
-  page: z.string().optional().default("1"),
-  limit: z.string().optional().default("10"),
-  search: z.string().optional(),
-});
+import { createUpdateSchema, getUpdatesSchema } from "@/lib/validations/auth";
+import { createNotification } from "@/lib/utils/notifications";
 
 export async function POST(req: NextRequest) {
   try {
@@ -72,7 +60,18 @@ export async function POST(req: NextRequest) {
     // Check file upload limits if there are files
     if (files.length > 0) {
       const totalFileSize = files.reduce((sum, file) => sum + file.size, 0);
-      const uploadCheck = await canUserUploadFiles(token.sub!, totalFileSize);
+      
+      // Determine if user is freelancer or client
+      const isFreelancer = portal.created_by === token.sub;
+      
+      let uploadCheck;
+      if (isFreelancer) {
+        // Freelancer uploading - use their own plan limits
+        uploadCheck = await canUserUploadFiles(token.sub!, totalFileSize);
+      } else {
+        // Client uploading - use portal's freelancer plan limits
+        uploadCheck = await canUserUploadFilesToPortal(token.sub!, totalFileSize, portalId);
+      }
       
       if (!uploadCheck.allowed) {
         return NextResponse.json({ 
@@ -196,17 +195,7 @@ export async function POST(req: NextRequest) {
       return newUpdate;
     });
 
-    // Return the created update
-    return NextResponse.json({ 
-      update: {
-        id: update.id,
-        title: update.title,
-        content: update.content,
-        created_at: update.created_at,
-        user: update.user,
-        files: uploadedFiles,
-      }
-    }, { status: 201 });
+    return NextResponse.json({ update });
 
   } catch (error) {
     console.error("Error creating update:", error);

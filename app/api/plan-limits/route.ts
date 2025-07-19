@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
-import { getUserPlanInfo, getUserPlanUsage, getUpgradeRecommendation } from "@/lib/utils/subscription";
+import { getUserPlanInfo, getUserPlanUsage, getUpgradeRecommendation, getPortalPlanLimits } from "@/lib/utils/subscription";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(req: NextRequest) {
@@ -21,7 +21,31 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Plan limits only apply to freelancers, not clients
+    // Check if this is a portal-specific request
+    const url = new URL(req.url);
+    const portalId = url.searchParams.get("portalId");
+
+    if (portalId) {
+      // Portal-specific limits - get the freelancer's plan limits for this portal
+      const portalLimits = await getPortalPlanLimits(portalId);
+      
+      if (!portalLimits) {
+        return NextResponse.json({ error: "Portal not found" }, { status: 404 });
+      }
+
+      return NextResponse.json({
+        plan: {
+          id: 'portal-specific',
+          name: 'Portal Limits',
+          isActive: true,
+          isFreePlan: false,
+          limits: portalLimits
+        },
+        isPortalSpecific: true
+      });
+    }
+
+    // Regular user plan limits (only for freelancers)
     if (user.role !== "freelancer") {
       return NextResponse.json({ 
         error: "Plan limits only apply to freelancers" 
@@ -69,7 +93,8 @@ export async function GET(req: NextRequest) {
           usagePercentage: usage.team.usagePercentage
         }
       },
-      upgrade: upgradeRecommendation
+      upgrade: upgradeRecommendation,
+      isPortalSpecific: false
     };
 
     return NextResponse.json(response);

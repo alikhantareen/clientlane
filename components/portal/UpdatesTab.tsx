@@ -292,79 +292,96 @@ export function UpdatesTab({ portalId }: UpdatesTabProps) {
             {updates.map((update) => (
               <div
                 key={update.id}
-                className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors relative"
+                className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-all duration-200 relative"
               >
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center flex-shrink-0">
-                    {update.user.image ? (
-                      <img
-                        src={update.user.image}
-                        alt={update.user.name}
-                        className="w-8 h-8 rounded-full object-cover"
-                      />
-                    ) : (
-                      <span className="text-white text-sm font-medium">
-                        {getUserInitials(update.user.name)}
-                      </span>
-                    )}
+                <div className="flex items-start gap-4">
+                  {/* Profile Section */}
+                  <div className="flex-shrink-0">
+                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-sm">
+                      {update.user.image ? (
+                        <img
+                          src={update.user.image}
+                          alt={update.user.name}
+                          className="w-12 h-12 rounded-full object-cover border-2 border-white"
+                        />
+                      ) : (
+                        <span className="text-white text-sm font-semibold">
+                          {getUserInitials(update.user.name)}
+                        </span>
+                      )}
+                    </div>
                   </div>
+
+                  {/* Content Section */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-medium text-gray-900 text-xs">
+                    {/* User Info Row */}
+                    <div className="flex items-center gap-3 mb-3">
+                      <span className="font-semibold text-gray-900 text-sm">
                         {update.user.name}
                       </span>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
                         {formatDistanceToNow(new Date(update.created_at), {
                           addSuffix: true,
                         })}
                       </span>
                     </div>
-                    <div className="space-y-2">
-                      <p
-                        className="text-gray-900 text-2xl font-medium cursor-pointer hover:underline"
+
+                    {/* Update Content */}
+                    <div className="space-y-3">
+                      <div
+                        className="group cursor-pointer"
                         onClick={() =>
                           router.push(`/portal/${portalId}/update/${update.id}`)
                         }
                       >
-                        {update.title}
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <MessageCircle className="w-4 h-4 text-gray-500" />
-                        <span className="text-sm text-gray-500">
-                          Click title to view details and replies
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-xl font-semibold text-gray-900 group-hover:text-blue-600 transition-colors duration-200 leading-tight">
+                            {update.title}
+                          </h3>
+                          <svg 
+                            className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors duration-200 opacity-0 group-hover:opacity-100" 
+                            fill="none" 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </div>
+                        <p className="text-sm text-gray-500 mt-1 group-hover:text-gray-600 transition-colors duration-200">
+                          Click to read full update
+                        </p>
                       </div>
                     </div>
                   </div>
 
                   {/* Three dots dropdown - Only show for the freelancer who created the update */}
                   {user && user.id === update.user.id && (
-                    <div className="absolute top-4 right-4 z-10 cursor-pointer">
+                    <div className="absolute top-4 right-4 z-10">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 w-8 p-0 hover:bg-gray-200 cursor-pointer"
+                            className="h-8 w-8 p-0 hover:bg-gray-100 rounded-full transition-colors duration-200"
                             onClick={(e) => e.stopPropagation()}
                           >
-                            <MoreVertical className="h-4 w-4" />
+                            <MoreVertical className="h-4 w-4 text-gray-500" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
+                        <DropdownMenuContent align="end" className="w-48">
                           <DropdownMenuItem
                             onClick={() => handleEditUpdate(update)}
-                            className="flex items-center gap-2 cursor-pointer"
+                            className="flex items-center gap-3 cursor-pointer py-2"
                           >
                             <Edit2 className="h-4 w-4" />
-                            Edit
+                            <span>Edit Update</span>
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => handleDeleteUpdate(update.id)}
-                            className="flex items-center gap-2 cursor-pointer text-red-600 focus:text-red-600"
+                            className="flex items-center gap-3 cursor-pointer text-red-600 focus:text-red-600 py-2"
                           >
                             <Trash2 className="h-4 w-4" />
-                            Delete
+                            <span>Delete Update</span>
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
