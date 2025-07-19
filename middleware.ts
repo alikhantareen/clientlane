@@ -41,8 +41,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // Redirect authenticated users away from login/signup pages
-  if (isAuthenticated && (path === '/login' || path === '/signup')) {
+  // Redirect authenticated users away from login/signup pages and landing page
+  if (isAuthenticated && (path === '/login' || path === '/signup' || path === '/')) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
