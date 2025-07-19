@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-import fs from "fs";
-import path from "path";
 import { hashPassword, generatePassword } from "@/lib/auth/password";
 import { sendEmail } from "@/lib/utils/email";
 import crypto from "crypto";
 import { getToken } from "next-auth/jwt";
 import { canUserCreatePortal, canUserUploadFiles } from "@/lib/utils/subscription";
+import { uploadToBlob } from "@/lib/utils/blob";
 
 const portalSchema = z.object({
   name: z.string().min(2),
@@ -51,9 +50,7 @@ export async function POST(req: NextRequest) {
       }, { status: 403 });
     }
 
-    // Ensure uploads dir exists
-    const uploadDir = path.join(process.cwd(), "public/uploads");
-    if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
 
     // Parse form data using App Router's native formData()
     const formData = await req.formData();
@@ -118,13 +115,9 @@ export async function POST(req: NextRequest) {
         }, { status: 403 });
       }
       
-      const buffer = await file.arrayBuffer();
-      const filename = `${Date.now()}_${file.name}`;
-      const filepath = path.join(uploadDir, filename);
-      
-      // Write file to disk
-      fs.writeFileSync(filepath, Buffer.from(buffer));
-      thumbnail_url = `/uploads/${filename}`;
+      // Upload file to Vercel Blob Storage
+      const blobResult = await uploadToBlob(file, 'portal-thumbnails');
+      thumbnail_url = blobResult.url;
     }
 
     // Use authenticated user ID

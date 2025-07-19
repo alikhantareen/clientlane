@@ -2,11 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getToken } from "next-auth/jwt";
 import { z } from "zod";
-import fs from "fs";
-import path from "path";
 import { canUserUploadFiles } from "@/lib/utils/subscription";
 import { createNotification } from "@/lib/utils/notifications";
 import { updateUserLastSeen } from "@/lib/utils/helpers";
+import { uploadToBlob, deleteFromBlob, isBlobUrl } from "@/lib/utils/blob";
 
 const updatePortalSchema = z.object({
   name: z.string().min(2).optional(),
@@ -187,9 +186,7 @@ export async function PUT(
       return NextResponse.json({ error: "Portal not found" }, { status: 404 });
     }
 
-    // Ensure uploads dir exists
-    const uploadDir = path.join(process.cwd(), "public/uploads");
-    if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
 
     // Parse form data
     const formData = await req.formData();
@@ -228,20 +225,13 @@ export async function PUT(
         }, { status: 403 });
       }
       
-      const buffer = await file.arrayBuffer();
-      const filename = `${Date.now()}_${file.name}`;
-      const filepath = path.join(uploadDir, filename);
+      // Upload file to Vercel Blob Storage
+      const blobResult = await uploadToBlob(file, 'portal-thumbnails');
+      thumbnail_url = blobResult.url;
       
-      // Write file to disk
-      fs.writeFileSync(filepath, Buffer.from(buffer));
-      thumbnail_url = `/uploads/${filename}`;
-      
-      // Remove old thumbnail if it exists
-      if (existingPortal.thumbnail_url) {
-        const oldFilePath = path.join(process.cwd(), "public", existingPortal.thumbnail_url);
-        if (fs.existsSync(oldFilePath)) {
-          fs.unlinkSync(oldFilePath);
-        }
+      // Remove old thumbnail if it exists and is a blob URL
+      if (existingPortal.thumbnail_url && isBlobUrl(existingPortal.thumbnail_url)) {
+        await deleteFromBlob(existingPortal.thumbnail_url);
       }
     }
 
@@ -519,29 +509,23 @@ export async function DELETE(
       // If client is not a "client" role, we don't modify their status
     });
 
-    // Delete physical files from disk
+    // Delete files from blob storage
     for (const file of portal.files) {
-      if (file.file_url) {
-        const filePath = path.join(process.cwd(), "public", file.file_url);
-        if (fs.existsSync(filePath)) {
-          try {
-            fs.unlinkSync(filePath);
-          } catch (err) {
-            console.error("Error deleting file:", err);
-          }
+      if (file.file_url && isBlobUrl(file.file_url)) {
+        try {
+          await deleteFromBlob(file.file_url);
+        } catch (err) {
+          console.error("Error deleting file from blob:", err);
         }
       }
     }
 
-    // Delete portal thumbnail if it exists
-    if (portal.thumbnail_url) {
-      const thumbnailPath = path.join(process.cwd(), "public", portal.thumbnail_url);
-      if (fs.existsSync(thumbnailPath)) {
-        try {
-          fs.unlinkSync(thumbnailPath);
-        } catch (err) {
-          console.error("Error deleting thumbnail:", err);
-        }
+    // Delete portal thumbnail if it exists and is a blob URL
+    if (portal.thumbnail_url && isBlobUrl(portal.thumbnail_url)) {
+      try {
+        await deleteFromBlob(portal.thumbnail_url);
+      } catch (err) {
+        console.error("Error deleting thumbnail from blob:", err);
       }
     }
 

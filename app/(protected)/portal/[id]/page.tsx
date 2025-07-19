@@ -188,7 +188,7 @@ export default function PortalDetailPage() {
                 className="flex items-center gap-2 text-gray-300 hover:text-white hover:bg-slate-800 cursor-pointer"
               >
                 <ArrowLeft className="w-4 h-4" />
-                Back to Portals
+                Back to portals
               </Button>
             </div>
           </section>
@@ -297,7 +297,7 @@ export default function PortalDetailPage() {
             className="flex items-center gap-2 cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4" />
-            Back to Portals
+            Back to portals
           </Button>
         </div>
         <div className="bg-white rounded-lg shadow-sm border mb-6">

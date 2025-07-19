@@ -2,10 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getToken } from "next-auth/jwt";
 import { z } from "zod";
-import fs from "fs";
-import path from "path";
-import { createNotification } from "@/lib/utils/notifications";
-import { canUserUploadFiles } from "@/lib/utils/subscription";
 import { updateUserLastSeen } from "@/lib/utils/helpers";
 
 const getFilesSchema = z.object({

@@ -299,7 +299,7 @@ export default function TopNavigation({ children }: TopNavigationProps) {
                       <div className="p-3 border-t">
                         <Button 
                           variant="ghost" 
-                          className="w-full text-sm"
+                          className="w-full text-sm cursor-pointer"
                           onClick={handleSeeAllNotifications}
                         >
                           See all notifications

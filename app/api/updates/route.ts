@@ -2,11 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getToken } from "next-auth/jwt";
 import { z } from "zod";
-import fs from "fs";
-import path from "path";
 import { createNotification } from "@/lib/utils/notifications";
 import { canUserUploadFiles } from "@/lib/utils/subscription";
 import { updateUserLastSeen } from "@/lib/utils/helpers";
+import { uploadToBlob } from "@/lib/utils/blob";
 
 const createUpdateSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -31,12 +30,6 @@ export async function POST(req: NextRequest) {
 
     // Update last_seen_at for the user
     await updateUserLastSeen(token.sub);
-
-    // Ensure uploads directory exists
-    const uploadDir = path.join(process.cwd(), "public/uploads");
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
 
     // Parse form data
     const formData = await req.formData();
@@ -97,16 +90,12 @@ export async function POST(req: NextRequest) {
       file_size: number;
     }> = [];
     for (const file of files) {
-      const buffer = await file.arrayBuffer();
-      const filename = `${Date.now()}_${file.name}`;
-      const filepath = path.join(uploadDir, filename);
-      
-      // Write file to disk
-      fs.writeFileSync(filepath, Buffer.from(buffer));
+      // Upload file to Vercel Blob Storage
+      const blobResult = await uploadToBlob(file, 'uploads');
       
       uploadedFiles.push({
         file_name: file.name,
-        file_url: `/uploads/${filename}`,
+        file_url: blobResult.url,
         file_type: file.type,
         file_size: file.size,
       });

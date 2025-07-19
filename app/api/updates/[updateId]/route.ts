@@ -2,12 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getToken } from "next-auth/jwt";
 import { z } from "zod";
-import fs from "fs";
-import path from "path";
 import { createNotification } from "@/lib/utils/notifications";
 import { canUserUploadFiles } from "@/lib/utils/subscription";
+import { uploadToBlob, deleteFromBlob, isBlobUrl } from "@/lib/utils/blob";
 
 const createReplySchema = z.object({
+  content: z.string().min(1, "Content is required"),
+});
+
+const updateSchema = z.object({
+  title: z.string().min(1, "Title is required"),
   content: z.string().min(1, "Content is required"),
 });
 
@@ -136,12 +140,6 @@ export async function POST(
 
     const { updateId } = await params;
 
-    // Ensure uploads directory exists
-    const uploadDir = path.join(process.cwd(), "public/uploads");
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-
     // Parse form data
     const formData = await req.formData();
     
@@ -213,16 +211,12 @@ export async function POST(
       file_size: number;
     }> = [];
     for (const file of files) {
-      const buffer = await file.arrayBuffer();
-      const filename = `${Date.now()}_${file.name}`;
-      const filepath = path.join(uploadDir, filename);
-      
-      // Write file to disk
-      fs.writeFileSync(filepath, Buffer.from(buffer));
+      // Upload file to Vercel Blob Storage
+      const blobResult = await uploadToBlob(file, 'uploads');
       
       uploadedFiles.push({
         file_name: file.name,
-        file_url: `/uploads/${filename}`,
+        file_url: blobResult.url,
         file_type: file.type,
         file_size: file.size,
       });
@@ -303,45 +297,58 @@ export async function POST(
           user_id: token.sub!,
           type: "reply_created",
           meta: {
-            update_id: newReply.id,
+            reply_id: newReply.id,
             parent_update_id: updateId,
-            parent_update_title: parentUpdate.title,
           },
         },
       });
 
-      // Create notification for reply
+      // Create notification for new reply
       await createNotification(
         tx,
         parentUpdate.portal.id,
         token.sub!,
         "reply_created",
         {
-          updateId: updateId,
-          replyId: newReply.id,
-          parentUpdateTitle: parentUpdate.title,
+          updateId: newReply.id,
+          parentUpdateId: updateId,
         }
       );
 
       return newReply;
     });
 
-    // Return the created reply
-    return NextResponse.json({ 
-      reply: {
-        id: reply.id,
-        content: reply.content,
-        created_at: reply.created_at,
-        user: reply.user,
-        files: uploadedFiles,
-      }
-    }, { status: 201 });
+    // Fetch the complete reply with files
+    const completeReply = await prisma.update.findUnique({
+      where: { id: reply.id },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            image: true,
+          },
+        },
+        files: {
+          select: {
+            id: true,
+            file_name: true,
+            file_url: true,
+            file_type: true,
+            file_size: true,
+          },
+        },
+      },
+    });
+
+    return NextResponse.json({ reply: completeReply });
 
   } catch (error) {
     console.error("Error creating reply:", error);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
-} 
+}
 
 export async function PUT(
   req: NextRequest,
@@ -356,12 +363,6 @@ export async function PUT(
 
     const { updateId } = await params;
 
-    // Ensure uploads directory exists
-    const uploadDir = path.join(process.cwd(), "public/uploads");
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-
     // Parse form data
     const formData = await req.formData();
     
@@ -375,9 +376,10 @@ export async function PUT(
         files.push(value);
       } else if (key === 'filesToRemove') {
         try {
-          filesToRemove.push(...JSON.parse(value as string));
+          const parsed = JSON.parse(value as string);
+          filesToRemove.push(...parsed);
         } catch (e) {
-          // If it's not JSON, treat as single file ID
+          // Handle individual file ID
           filesToRemove.push(value as string);
         }
       } else {
@@ -386,11 +388,6 @@ export async function PUT(
     }
 
     // Validate required fields
-    const updateSchema = z.object({
-      title: z.string().min(1, "Title is required"),
-      content: z.string().min(1, "Content is required"),
-    });
-
     const parsed = updateSchema.safeParse(fields);
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 });
@@ -398,7 +395,7 @@ export async function PUT(
 
     const { title, content } = parsed.data;
 
-    // Verify the update exists and user is the creator
+    // Find the update and verify ownership
     const existingUpdate = await prisma.update.findFirst({
       where: { 
         id: updateId,
@@ -442,16 +439,12 @@ export async function PUT(
     }> = [];
     
     for (const file of files) {
-      const buffer = await file.arrayBuffer();
-      const filename = `${Date.now()}_${file.name}`;
-      const filepath = path.join(uploadDir, filename);
-      
-      // Write file to disk
-      fs.writeFileSync(filepath, Buffer.from(buffer));
+      // Upload file to Vercel Blob Storage
+      const blobResult = await uploadToBlob(file, 'uploads');
       
       uploadedFiles.push({
         file_name: file.name,
-        file_url: `/uploads/${filename}`,
+        file_url: blobResult.url,
         file_type: file.type,
         file_size: file.size,
       });
@@ -468,11 +461,10 @@ export async function PUT(
           },
         });
 
-        // Delete files from filesystem
+        // Delete files from blob storage
         for (const file of filesToDelete) {
-          const filePath = path.join(process.cwd(), "public", file.file_url);
-          if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
+          if (isBlobUrl(file.file_url)) {
+            await deleteFromBlob(file.file_url);
           }
         }
 
@@ -536,138 +528,15 @@ export async function PUT(
       },
     });
 
-    // Return the updated update
     return NextResponse.json({ 
       update: {
-        id: updatedUpdate.id,
-        title: updatedUpdate.title,
-        content: updatedUpdate.content,
-        created_at: updatedUpdate.created_at,
-        updated_at: updatedUpdate.updated_at,
-        user: updatedUpdate.user,
+        ...updatedUpdate,
         files: allFiles,
       }
-    }, { status: 200 });
+    });
 
   } catch (error) {
     console.error("Error updating update:", error);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
-  }
-}
-
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: Promise<RouteParams> }
-) {
-  try {
-    // Check authentication
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-    if (!token || !token.sub) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { updateId } = await params;
-
-    // Verify the update exists and user is the creator
-    const existingUpdate = await prisma.update.findFirst({
-      where: { 
-        id: updateId,
-        user_id: token.sub, // Only allow deleting own updates
-      },
-      include: {
-        files: {
-          select: {
-            id: true,
-            file_url: true,
-          },
-        },
-        replies: {
-          select: {
-            id: true,
-          },
-        },
-        portal: {
-          select: {
-            id: true,
-          },
-        },
-      },
-    });
-
-    if (!existingUpdate) {
-      return NextResponse.json({ error: "Update not found or you don't have permission to delete it" }, { status: 404 });
-    }
-
-    // Delete in database transaction
-    await prisma.$transaction(async (tx) => {
-      // Get all files from replies
-      const replyFiles = await tx.file.findMany({
-        where: {
-          update_id: { in: existingUpdate.replies.map(r => r.id) },
-        },
-        select: {
-          file_url: true,
-        },
-      });
-
-      // Collect all files to delete (from update and its replies)
-      const allFiles = [
-        ...existingUpdate.files,
-        ...replyFiles,
-      ];
-
-      // Delete files from filesystem
-      for (const file of allFiles) {
-        const filePath = path.join(process.cwd(), "public", file.file_url);
-        if (fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
-        }
-      }
-
-      // Delete file records for replies
-      await tx.file.deleteMany({
-        where: {
-          update_id: { in: existingUpdate.replies.map(r => r.id) },
-        },
-      });
-
-      // Delete file records for main update
-      await tx.file.deleteMany({
-        where: {
-          update_id: updateId,
-        },
-      });
-
-      // Delete reply records
-      await tx.update.deleteMany({
-        where: {
-          parent_update_id: updateId,
-        },
-      });
-
-      // Delete the main update
-      await tx.update.delete({
-        where: { id: updateId },
-      });
-
-      // Log update deletion activity
-      await tx.activity.create({
-        data: {
-          portal_id: existingUpdate.portal.id,
-          user_id: token.sub!,
-          type: "update_deleted",
-          meta: {
-            update_title: existingUpdate.title,
-            update_id: existingUpdate.id,
-          },
-        },
-      });
-    });
-
-    return NextResponse.json({ message: "Update deleted successfully" }, { status: 200 });
-
-  } catch (error) {
-    console.error("Error deleting update:", error);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 } 

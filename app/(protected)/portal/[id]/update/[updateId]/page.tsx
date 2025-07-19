@@ -514,7 +514,7 @@ export default function UpdateDetailsPage() {
           className="flex items-center gap-2 text-gray-600 hover:text-gray-900 cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to Updates
+          Back to updates
         </Button>
       </div>
 
@@ -562,7 +562,7 @@ export default function UpdateDetailsPage() {
                   })}
                 </span>
               </div>
-              <div className="prose prose-sm max-w-none [&_p]:mb-3 [&_strong]:font-bold [&_em]:italic [&_ul]:list-disc [&_ol]:list-decimal [&_li]:ml-6 [&_a]:text-blue-600 [&_a]:underline">
+              <div className="prose prose-sm max-w-none text-sm [&_p]:mb-3 [&_strong]:font-bold [&_em]:italic [&_ul]:list-disc [&_ol]:list-decimal [&_li]:ml-6 [&_a]:text-blue-600 [&_a]:underline">
                 <div dangerouslySetInnerHTML={{ __html: update.content }} />
               </div>
               {/* Files */}
@@ -636,7 +636,7 @@ export default function UpdateDetailsPage() {
                       })}
                     </span>
                   </div>
-                  <div className="prose prose-sm max-w-none [&_p]:mb-3 [&_strong]:font-bold [&_em]:italic [&_ul]:list-disc [&_ol]:list-decimal [&_li]:ml-6 [&_a]:text-blue-600 [&_a]:underline">
+                  <div className="prose prose-sm max-w-none text-sm [&_p]:mb-3 [&_strong]:font-bold [&_em]:italic [&_ul]:list-disc [&_ol]:list-decimal [&_li]:ml-6 [&_a]:text-blue-600 [&_a]:underline">
                     <div dangerouslySetInnerHTML={{ __html: reply.content }} />
                   </div>
                   {/* Reply Files */}

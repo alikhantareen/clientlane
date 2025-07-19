@@ -2,9 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getToken } from "next-auth/jwt";
 import { z } from "zod";
-import fs from "fs";
-import path from "path";
 import { canUserUploadFiles } from "@/lib/utils/subscription";
+import { uploadToBlob, deleteFromBlob, isBlobUrl } from "@/lib/utils/blob";
 
 const updateProfileSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").optional(),
@@ -50,9 +49,6 @@ export async function PATCH(req: NextRequest) {
 
     if (contentType.includes("multipart/form-data")) {
       // Handle form data (file upload)
-      const uploadDir = path.join(process.cwd(), "public/uploads");
-      if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-
       const formData = await req.formData();
       
       // Extract fields from formData
@@ -88,20 +84,42 @@ export async function PATCH(req: NextRequest) {
         }, { status: 403 });
       }
       
-      const buffer = await file.arrayBuffer();
-      const filename = `profile_${Date.now()}_${file.name}`;
-      const filepath = path.join(process.cwd(), "public/uploads", filename);
-      
-      // Write file to disk
-      fs.writeFileSync(filepath, Buffer.from(buffer));
-      image_url = `/uploads/${filename}`;
+      // Upload file to Vercel Blob Storage
+      const blobResult = await uploadToBlob(file, 'profile-images');
+      image_url = blobResult.url;
     }
+
+    // Get current user to check for existing image
+    const currentUser = await prisma.user.findUnique({
+      where: { id: token.sub },
+      select: { image: true }
+    });
 
     // Update user profile
     const updateData: any = {};
     if (parsed.data.name) updateData.name = parsed.data.name;
-    if (image_url) updateData.image = image_url;
-    if (parsed.data.removeImage) updateData.image = null;
+    if (image_url) {
+      updateData.image = image_url;
+      // Delete old image if it exists and is a blob URL
+      if (currentUser?.image && isBlobUrl(currentUser.image)) {
+        try {
+          await deleteFromBlob(currentUser.image);
+        } catch (err) {
+          console.error("Error deleting old profile image:", err);
+        }
+      }
+    }
+    if (parsed.data.removeImage) {
+      updateData.image = null;
+      // Delete old image if it exists and is a blob URL
+      if (currentUser?.image && isBlobUrl(currentUser.image)) {
+        try {
+          await deleteFromBlob(currentUser.image);
+        } catch (err) {
+          console.error("Error deleting old profile image:", err);
+        }
+      }
+    }
 
     const updatedUser = await prisma.user.update({
       where: { id: token.sub },

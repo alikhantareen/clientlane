@@ -2,11 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getToken } from "next-auth/jwt";
 import { z } from "zod";
-import fs from "fs";
-import path from "path";
 import { canUserUploadFiles } from "@/lib/utils/subscription";
 import { createNotification } from "@/lib/utils/notifications";
 import { updateUserLastSeen } from "@/lib/utils/helpers";
+import { uploadToBlob, deleteFromBlob, isBlobUrl } from "@/lib/utils/blob";
 
 const updateReplySchema = z.object({
   content: z.string().min(1, "Content is required"),
@@ -31,12 +30,6 @@ export async function PUT(
     await updateUserLastSeen(token.sub);
 
     const { replyId } = await params;
-
-    // Ensure uploads directory exists
-    const uploadDir = path.join(process.cwd(), "public/uploads");
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
 
     // Parse form data
     const formData = await req.formData();
@@ -108,16 +101,12 @@ export async function PUT(
       file_size: number;
     }> = [];
     for (const file of files) {
-      const buffer = await file.arrayBuffer();
-      const filename = `${Date.now()}_${file.name}`;
-      const filepath = path.join(uploadDir, filename);
-      
-      // Write file to disk
-      fs.writeFileSync(filepath, Buffer.from(buffer));
+      // Upload file to Vercel Blob Storage
+      const blobResult = await uploadToBlob(file, 'uploads');
       
       uploadedFiles.push({
         file_name: file.name,
-        file_url: `/uploads/${filename}`,
+        file_url: blobResult.url,
         file_type: file.type,
         file_size: file.size,
       });
@@ -127,6 +116,20 @@ export async function PUT(
     const updatedReply = await prisma.$transaction(async (tx) => {
       // Remove files that were marked for removal
       if (filesToRemove.length > 0) {
+        const filesToDelete = await tx.file.findMany({
+          where: {
+            id: { in: filesToRemove },
+            update_id: replyId,
+          },
+        });
+
+        // Delete files from blob storage
+        for (const file of filesToDelete) {
+          if (isBlobUrl(file.file_url)) {
+            await deleteFromBlob(file.file_url);
+          }
+        }
+
         await tx.file.deleteMany({
           where: {
             id: { in: filesToRemove },
@@ -173,22 +176,17 @@ export async function PUT(
       return updated;
     });
 
-    // Delete removed files from filesystem
-    if (filesToRemove.length > 0) {
-      const removedFiles = reply.files.filter(file => filesToRemove.includes(file.id));
-      const uploadDir = path.join(process.cwd(), "public");
-      
-      for (const file of removedFiles) {
-        const filePath = path.join(uploadDir, file.file_url);
-        if (fs.existsSync(filePath)) {
-          try {
-            fs.unlinkSync(filePath);
-          } catch (error) {
-            console.error("Error deleting file:", filePath, error);
-          }
-        }
-      }
-    }
+    // Get all current files for the reply
+    const allFiles = await prisma.file.findMany({
+      where: { update_id: replyId },
+      select: {
+        id: true,
+        file_name: true,
+        file_url: true,
+        file_type: true,
+        file_size: true,
+      },
+    });
 
     // Return the updated reply
     return NextResponse.json({ 
@@ -198,7 +196,7 @@ export async function PUT(
         created_at: updatedReply.created_at,
         updated_at: updatedReply.updated_at,
         user: updatedReply.user,
-        files: [...updatedReply.files, ...uploadedFiles],
+        files: allFiles,
       }
     });
 
@@ -275,15 +273,13 @@ export async function DELETE(
       });
     });
 
-    // Delete physical files from filesystem
-    const uploadDir = path.join(process.cwd(), "public");
+    // Delete files from blob storage
     for (const file of reply.files) {
-      const filePath = path.join(uploadDir, file.file_url);
-      if (fs.existsSync(filePath)) {
+      if (isBlobUrl(file.file_url)) {
         try {
-          fs.unlinkSync(filePath);
+          await deleteFromBlob(file.file_url);
         } catch (error) {
-          console.error("Error deleting file:", filePath, error);
+          console.error("Error deleting file from blob:", error);
         }
       }
     }
@@ -295,5 +291,3 @@ export async function DELETE(
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 } 
-
- 

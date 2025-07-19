@@ -258,7 +258,7 @@ export function AddUpdateModal({ isOpen, onClose, portalId, editUpdate }: AddUpd
       <DialogContent className="max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <DialogHeader className="space-y-0">
           <DialogTitle className="text-2xl font-bold">
-            {editUpdate ? "Edit Update" : "New Update"}
+            {editUpdate ? "Edit Update" : "Add Update"}
           </DialogTitle>
         </DialogHeader>
 

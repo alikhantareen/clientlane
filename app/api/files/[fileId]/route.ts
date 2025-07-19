@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getToken } from "next-auth/jwt";
-import fs from "fs";
-import path from "path";
+import { deleteFromBlob, isBlobUrl } from "@/lib/utils/blob";
 
 interface RouteParams {
   fileId: string;
@@ -76,16 +75,13 @@ export async function DELETE(
       });
     });
 
-    // Delete physical file from filesystem
-    const uploadDir = path.join(process.cwd(), "public");
-    const filePath = path.join(uploadDir, file.file_url);
-    
-    if (fs.existsSync(filePath)) {
+    // Delete file from blob storage if it's a blob URL
+    if (isBlobUrl(file.file_url)) {
       try {
-        fs.unlinkSync(filePath);
+        await deleteFromBlob(file.file_url);
       } catch (error) {
-        console.error("Error deleting physical file:", filePath, error);
-        // Don't fail the request if physical file deletion fails
+        console.error("Error deleting file from blob:", error);
+        // Don't fail the request if blob deletion fails
       }
     }
 
