@@ -80,7 +80,11 @@ export async function GET(
     });
 
     if (!update) {
-      return NextResponse.json({ error: "Update not found" }, { status: 404 });
+      return NextResponse.json({ 
+        error: "Update not found", 
+        message: "This update may have been deleted or you may not have access to it.",
+        code: "UPDATE_NOT_FOUND"
+      }, { status: 404 });
     }
 
     // Check if user has access to this portal
@@ -528,6 +532,101 @@ export async function PUT(
 
   } catch (error) {
     console.error("Error updating update:", error);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  }
+} 
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<RouteParams> }
+) {
+  try {
+    // Check authentication
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    if (!token || !token.sub) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { updateId } = await params;
+
+    // Find the update and verify ownership
+    const existingUpdate = await prisma.update.findFirst({
+      where: { 
+        id: updateId,
+        user_id: token.sub, // Only allow deleting own updates
+      },
+      include: {
+        files: true,
+        replies: {
+          include: {
+            files: true,
+          },
+        },
+        portal: {
+          select: {
+            id: true,
+            created_by: true,
+            client_id: true,
+          },
+        },
+      },
+    });
+
+    if (!existingUpdate) {
+      return NextResponse.json({ error: "Update not found or you don't have permission to delete it" }, { status: 404 });
+    }
+
+    // Delete in database transaction
+    await prisma.$transaction(async (tx) => {
+      // Delete all files from blob storage first
+      const allFiles = [
+        ...existingUpdate.files,
+        ...existingUpdate.replies.flatMap(reply => reply.files)
+      ];
+
+      for (const file of allFiles) {
+        if (isBlobUrl(file.file_url)) {
+          await deleteFromBlob(file.file_url);
+        }
+      }
+
+      // Delete notifications related to this update
+      await tx.notification.deleteMany({
+        where: {
+          portal_id: existingUpdate.portal.id,
+          link: {
+            contains: updateId
+          }
+        }
+      });
+
+      // Delete file records from database (explicitly since cascade is SetNull)
+      await tx.file.deleteMany({
+        where: {
+          OR: [
+            { update_id: updateId },
+            { update_id: { in: existingUpdate.replies.map(reply => reply.id) } }
+          ]
+        }
+      });
+
+      // Delete all replies
+      await tx.update.deleteMany({
+        where: {
+          parent_update_id: updateId,
+        },
+      });
+
+      // Delete the main update
+      await tx.update.delete({
+        where: { id: updateId },
+      });
+    });
+
+    return NextResponse.json({ message: "Update deleted successfully" });
+
+  } catch (error) {
+    console.error("Error deleting update:", error);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 } 

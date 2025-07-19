@@ -206,6 +206,43 @@ export async function markAllNotificationsAsRead(userId: string): Promise<void> 
   });
 }
 
+// Clean up orphaned notifications (notifications pointing to deleted updates)
+export async function cleanupOrphanedNotifications(): Promise<void> {
+  // Find notifications that point to updates that no longer exist
+  const notifications = await prisma.notification.findMany({
+    where: {
+      link: {
+        contains: '/update/'
+      }
+    },
+    select: {
+      id: true,
+      link: true
+    }
+  });
+
+  for (const notification of notifications) {
+    // Extract update ID from link
+    const updateIdMatch = notification.link.match(/\/update\/([^\/\?#]+)/);
+    if (updateIdMatch) {
+      const updateId = updateIdMatch[1];
+      
+      // Check if update exists
+      const update = await prisma.update.findUnique({
+        where: { id: updateId },
+        select: { id: true }
+      });
+      
+      // If update doesn't exist, delete the notification
+      if (!update) {
+        await prisma.notification.delete({
+          where: { id: notification.id }
+        });
+      }
+    }
+  }
+}
+
 // Get unread notification count for a user
 export async function getUnreadNotificationCount(userId: string): Promise<number> {
   return await prisma.notification.count({

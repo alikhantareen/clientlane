@@ -95,12 +95,27 @@ export async function PUT(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { notificationId, markAllAsRead } = body;
+    const { notificationId, markAllAsRead, markByLink } = body;
 
     if (markAllAsRead) {
       // Mark all notifications as read
       await markAllNotificationsAsRead(token.sub);
       return NextResponse.json({ message: "All notifications marked as read" });
+    } else if (markByLink) {
+      // Mark notifications by link pattern
+      await prisma.notification.updateMany({
+        where: {
+          user_id: token.sub,
+          link: {
+            contains: markByLink
+          },
+          is_read: false
+        },
+        data: {
+          is_read: true
+        }
+      });
+      return NextResponse.json({ message: "Notifications marked as read" });
     } else if (notificationId) {
       // Mark specific notification as read
       await markNotificationAsRead(notificationId, token.sub);

@@ -136,11 +136,17 @@ export default function UpdateDetailsPage() {
       setError(null);
 
       const response = await fetch(`/api/updates/${updateId}`);
+      const data = await response.json();
+      
       if (!response.ok) {
-        throw new Error("Failed to fetch update");
+        if (response.status === 404) {
+          // Show a toast notification for deleted updates
+          toast.info("This update has been deleted and is no longer available.");
+          throw new Error(data.message || "This update has been deleted or is no longer available.");
+        }
+        throw new Error(data.error || "Failed to fetch update");
       }
 
-      const data = await response.json();
       setUpdate(data.update);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch update");
@@ -152,7 +158,28 @@ export default function UpdateDetailsPage() {
 
   useEffect(() => {
     fetchUpdate();
-  }, [updateId]);
+    
+    // Mark any notifications related to this update as read
+    const markNotificationAsRead = async () => {
+      try {
+        await fetch('/api/notifications', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            notificationId: null, // We'll mark by link pattern
+            markAllAsRead: false,
+            markByLink: `/portal/${portalId}/update/${updateId}`
+          }),
+        });
+      } catch (error) {
+        console.error('Error marking notification as read:', error);
+      }
+    };
+    
+    markNotificationAsRead();
+  }, [updateId, portalId]);
 
   // Fetch user's plan limits on component mount
   useEffect(() => {
@@ -513,12 +540,43 @@ export default function UpdateDetailsPage() {
 
   if (error) {
     return (
-      <div className="text-center py-8">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-600">{error}</p>
-          <Button onClick={fetchUpdate} variant="outline" className="mt-2">
-            Try Again
+      <div className="max-w-4xl mx-auto p-6">
+        <div className="flex items-center gap-4 mb-6">
+          <Button
+            variant="ghost"
+            onClick={handleBackClick}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors duration-200 cursor-pointer"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to portal
           </Button>
+        </div>
+        
+        <div className="text-center py-12">
+          <div className="bg-red-50 border border-red-200 rounded-xl p-8 max-w-md mx-auto">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Update Not Found</h2>
+            <p className="text-gray-600 mb-6">{error}</p>
+            <div className="space-y-3">
+              <Button 
+                onClick={handleBackClick} 
+                className="w-full bg-blue-600 text-white hover:bg-blue-700 cursor-pointer"
+              >
+                Go Back to Portal
+              </Button>
+              <Button 
+                onClick={fetchUpdate} 
+                variant="outline" 
+                className="w-full cursor-pointer"
+              >
+                Try Again
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -526,8 +584,35 @@ export default function UpdateDetailsPage() {
 
   if (!update) {
     return (
-      <div className="text-center py-8">
-        <p className="text-gray-500">Update not found</p>
+      <div className="max-w-4xl mx-auto p-6">
+        <div className="flex items-center gap-4 mb-6">
+          <Button
+            variant="ghost"
+            onClick={handleBackClick}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors duration-200 cursor-pointer"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to portal
+          </Button>
+        </div>
+        
+        <div className="text-center py-12">
+          <div className="bg-gray-50 border border-gray-200 rounded-xl p-8 max-w-md mx-auto">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Update Not Available</h2>
+            <p className="text-gray-600 mb-6">This update may have been deleted or you may not have access to it.</p>
+            <Button 
+              onClick={handleBackClick} 
+              className="w-full bg-blue-600 text-white hover:bg-blue-700"
+            >
+              Go Back to Portal
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }

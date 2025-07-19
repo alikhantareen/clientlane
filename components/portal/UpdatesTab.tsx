@@ -425,14 +425,11 @@ export function UpdatesTab({ portalId }: UpdatesTabProps) {
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 No updates yet
               </h3>
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-gray-400 mb-4">
                 Updates shared to this portal will appear here.
               </p>
               {user?.role === "freelancer" && (
                 <>
-                  <p className="text-gray-600 mb-4">
-                    Be the first to share an update for this portal.
-                  </p>
                   <Button
                     onClick={handleAddUpdate}
                     className="bg-blue-600 text-white hover:bg-blue-700 cursor-pointer"
