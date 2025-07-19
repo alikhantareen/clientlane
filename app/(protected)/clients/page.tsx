@@ -26,6 +26,7 @@ export default function ClientsPage() {
     status: "all",
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [resendLoadingStates, setResendLoadingStates] = useState<Record<string, boolean>>({});
 
   // Fetch clients data
   const fetchClients = useCallback(async () => {
@@ -81,6 +82,9 @@ export default function ClientsPage() {
         break;
       
       case "resend-invite":
+        // Set loading state for this specific client
+        setResendLoadingStates(prev => ({ ...prev, [client.id]: true }));
+        
         try {
           const response = await fetch("/api/clients/resend-invite", {
             method: "POST",
@@ -99,6 +103,9 @@ export default function ClientsPage() {
         } catch (error) {
           console.error("Error resending invitation:", error);
           toast.error("Failed to resend invitation");
+        } finally {
+          // Clear loading state for this client
+          setResendLoadingStates(prev => ({ ...prev, [client.id]: false }));
         }
         break;
       
@@ -132,7 +139,7 @@ export default function ClientsPage() {
     );
   }
 
-  const columns = createColumns(handleClientAction);
+  const columns = createColumns(handleClientAction, resendLoadingStates);
 
   return (
     <div className="min-h-screen bg-gray-50">

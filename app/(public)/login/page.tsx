@@ -1,14 +1,14 @@
 "use client";
 
 import { signIn } from "next-auth/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -16,7 +16,61 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [magicLinkLoading, setMagicLinkLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Handle magic link authentication on component mount
+  useEffect(() => {
+    const token = searchParams?.get("token");
+    if (token) {
+      handleMagicLinkAuth(token);
+    }
+  }, [searchParams]);
+
+  const handleMagicLinkAuth = async (token: string) => {
+    setMagicLinkLoading(true);
+    try {
+      const response = await fetch("/api/auth/magic-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        toast.success(`Welcome back, ${data.user.name}! Redirecting to your portal...`);
+        
+        // Small delay to ensure cookie is set, then force a refresh before redirect
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Force a page refresh to ensure session is picked up
+        if (data.portalId) {
+          window.location.href = `/portal/${data.portalId}`;
+        } else {
+          window.location.href = "/dashboard";
+        }
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || "Invalid or expired magic link");
+        
+        // Clear the token from URL to show the regular login form
+        const url = new URL(window.location.href);
+        url.searchParams.delete("token");
+        window.history.replaceState({}, "", url.toString());
+      }
+    } catch (error) {
+      console.error("Magic link authentication error:", error);
+      toast.error("Authentication failed. Please try logging in manually.");
+      
+      // Clear the token from URL to show the regular login form
+      const url = new URL(window.location.href);
+      url.searchParams.delete("token");
+      window.history.replaceState({}, "", url.toString());
+    } finally {
+      setMagicLinkLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,6 +125,19 @@ export default function LoginPage() {
       router.push("/dashboard");
     }
   };
+
+  // Show magic link processing screen
+  if (magicLinkLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold mb-2">Authenticating...</h2>
+          <p className="text-gray-600">Please wait while we verify your access link.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>

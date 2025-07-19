@@ -12,10 +12,7 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   // Production optimizations
-  experimental: {
-    // Optimize server components
-    serverComponentsExternalPackages: ['@prisma/client'],
-  },
+  serverExternalPackages: ['@prisma/client'],
   // API route optimizations
   async headers() {
     return [

@@ -249,7 +249,7 @@ export async function POST(req: NextRequest) {
             
             <div style="background-color: #f8f9fa; padding: 20px; text-align: center; border-top: 1px solid #eeeeee;">
               <p style="color: #999999; font-size: 12px; margin: 0;">
-                © 2024 Clientlane. This email was sent because a portal was created for you.
+                © ${new Date().getFullYear()} Clientlane. This email was sent because a portal was created for you.
               </p>
             </div>
           </div>
@@ -304,7 +304,7 @@ export async function POST(req: NextRequest) {
             
             <div style="background-color: #f8f9fa; padding: 20px; text-align: center; border-top: 1px solid #eeeeee;">
               <p style="color: #999999; font-size: 12px; margin: 0;">
-                © 2024 Clientlane. This email was sent because you were invited to a new portal.
+                © ${new Date().getFullYear()} Clientlane. This email was sent because you were invited to a new portal.
               </p>
             </div>
           </div>

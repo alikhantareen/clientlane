@@ -21,7 +21,13 @@ export async function middleware(request: NextRequest) {
 
   // Define protected paths that require authentication
   const isProtectedPath = path.startsWith('/(protected)') || 
-                         path.startsWith('/dashboard')
+                         path.startsWith('/dashboard') ||
+                         path.startsWith('/portal') ||
+                         path.startsWith('/clients') ||
+                         path.startsWith('/notifications') ||
+                         path.startsWith('/subscriptions') ||
+                         path.startsWith('/settings') ||
+                         path.startsWith('/shared-links')
 
   // Check if user is authenticated using NextAuth JWT
   const token = await getToken({ 

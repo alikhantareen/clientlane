@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MoreHorizontal, Eye, Send } from "lucide-react";
+import { MoreHorizontal, Eye, Send, Loader2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 const getStatusColor = (status: ClientData["status"]) => {
@@ -27,7 +27,12 @@ const getStatusColor = (status: ClientData["status"]) => {
   }
 };
 
-const formatDate = (date: Date | string) => {
+const formatLastActive = (date?: Date) => {
+  if (!date) return "Never";
+  return formatDistanceToNow(new Date(date), { addSuffix: true });
+};
+
+const formatDate = (date: Date) => {
   return new Date(date).toLocaleDateString("en-US", {
     year: "numeric",
     month: "short",
@@ -35,17 +40,13 @@ const formatDate = (date: Date | string) => {
   });
 };
 
-const formatLastActive = (date: Date | string | null | undefined) => {
-  if (!date) return "Never";
-  return formatDistanceToNow(new Date(date), { addSuffix: true });
-};
-
 interface ClientActionsProps {
   client: ClientData;
   onAction: (action: ClientAction, client: ClientData) => void;
+  isLoading?: boolean;
 }
 
-const ClientActions: React.FC<ClientActionsProps> = ({ client, onAction }) => {
+const ClientActions: React.FC<ClientActionsProps> = ({ client, onAction, isLoading = false }) => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -55,9 +56,17 @@ const ClientActions: React.FC<ClientActionsProps> = ({ client, onAction }) => {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem className="cursor-pointer" onClick={() => onAction("resend-invite", client)}>
-          <Send className="mr-2 h-4 w-4" />
-          Resend Invite
+        <DropdownMenuItem 
+          className="cursor-pointer" 
+          onClick={() => onAction("resend-invite", client)}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Send className="mr-2 h-4 w-4" />
+          )}
+          {isLoading ? "Sending..." : "Resend Invite"}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -65,7 +74,8 @@ const ClientActions: React.FC<ClientActionsProps> = ({ client, onAction }) => {
 };
 
 export const createColumns = (
-  onAction: (action: ClientAction, client: ClientData) => void
+  onAction: (action: ClientAction, client: ClientData) => void,
+  resendLoadingStates?: Record<string, boolean>
 ): ColumnDef<ClientData>[] => [
   {
     accessorKey: "name",
@@ -157,7 +167,9 @@ export const createColumns = (
     id: "actions",
     header: "Actions",
     cell: ({ row }) => {
-      return <ClientActions client={row.original} onAction={onAction} />;
+      const client = row.original;
+      const isLoading = resendLoadingStates?.[client.id] || false;
+      return <ClientActions client={client} onAction={onAction} isLoading={isLoading} />;
     },
   },
 ]; 
