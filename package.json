@@ -5,11 +5,13 @@
   "scripts": {
     "dev": "node server.js",
     "dev:turbo": "next dev --turbopack",
-    "build": "prisma generate && prisma db push && next build",
+    "build": "prisma generate && prisma migrate deploy && next build",
     "start": "NODE_ENV=production node server.js",
     "start:next": "next start",
     "lint": "next lint",
-    "db:seed": "npx tsx prisma/seed.ts"
+    "db:seed": "npx tsx prisma/seed.ts",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev"
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.6",
