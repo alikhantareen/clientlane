@@ -140,7 +140,7 @@ export async function POST(req: NextRequest) {
         ],
         mode: 'subscription',
         success_url: `${baseUrl}/subscriptions?success=true&session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${baseUrl}/subscriptions?canceled=true`,
+        cancel_url: `${baseUrl}/subscriptions?canceled=true&error=checkout_canceled`,
         metadata: {
           userId: user.id,
           planId: plan.id,

@@ -8,6 +8,7 @@ import { CheckCircle, ExternalLink, Loader2 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { useSearchParams, useRouter } from "next/navigation";
 
 interface CurrentSubscription {
   id: string;
@@ -25,9 +26,40 @@ export default function SubscriptionsPage() {
   const [loading, setLoading] = useState<string | null>(null);
   const [currentSubscription, setCurrentSubscription] = useState<CurrentSubscription | null>(null);
   const [loadingSubscription, setLoadingSubscription] = useState(true);
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
   // Convert SUBSCRIPTION_PLANS object to array
   const plans = Object.values(SUBSCRIPTION_PLANS);
+
+  // Handle URL parameters for subscription status
+  useEffect(() => {
+    if (!searchParams) return;
+    
+    const success = searchParams.get('success');
+    const canceled = searchParams.get('canceled');
+    const sessionId = searchParams.get('session_id');
+    const portalReturn = searchParams.get('portal_return');
+    const error = searchParams.get('error');
+
+    if (success === 'true' && sessionId) {
+      toast.success("🎉 Subscription updated successfully! Welcome to your new plan.");
+      // Clean up URL parameters
+      router.replace('/subscriptions', { scroll: false });
+    } else if (canceled === 'true') {
+      toast.info("ℹ️ Subscription process was canceled. No changes were made to your account.");
+      // Clean up URL parameters
+      router.replace('/subscriptions', { scroll: false });
+    } else if (portalReturn === 'true') {
+      toast.success("✅ Billing portal session completed. Your subscription changes have been applied.");
+      // Clean up URL parameters
+      router.replace('/subscriptions', { scroll: false });
+    } else if (error) {
+      toast.error(`❌ Subscription error: ${error}`);
+      // Clean up URL parameters
+      router.replace('/subscriptions', { scroll: false });
+    }
+  }, [searchParams, router]);
 
   // Fetch current subscription
   useEffect(() => {
@@ -81,6 +113,9 @@ export default function SubscriptionsPage() {
         throw new Error(data.error || 'Failed to create checkout session');
       }
 
+      // Show success toast before redirecting
+      toast.success("Redirecting to secure payment page...");
+      
       // Redirect to Stripe checkout
       window.location.href = data.url;
     } catch (error) {
@@ -105,6 +140,9 @@ export default function SubscriptionsPage() {
         throw new Error(data.error || 'Failed to create portal session');
       }
 
+      // Show success toast before redirecting
+      toast.success("Opening billing portal...");
+      
       // Redirect to Stripe customer portal
       window.location.href = data.url;
     } catch (error) {
