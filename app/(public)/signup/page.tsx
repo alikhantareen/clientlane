@@ -9,6 +9,7 @@ import { z } from "zod";
 import { Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { signIn } from "next-auth/react";
 
 const passwordSchema = z.string()
   .min(8, "Password must be at least 8 characters")
@@ -103,6 +104,19 @@ export default function SignupPage() {
           <span>Already have an account?</span>
           <Link href="/login" className="text-black font-bold hover:underline">Login</Link>
         </div>
+      </div>
+      <Button
+        variant="outline"
+        className="w-full flex items-center justify-center gap-2 mb-6 border-gray-300 cursor-pointer"
+        onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+      >
+        <img src="/google.svg" alt="Google" className="w-5 h-5" />
+        Sign in with Google
+      </Button>
+      <div className="flex items-center my-4">
+        <div className="flex-1 h-px bg-gray-300" />
+        <span className="mx-4 text-gray-500 font-medium">OR</span>
+        <div className="flex-1 h-px bg-gray-300" />
       </div>
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>

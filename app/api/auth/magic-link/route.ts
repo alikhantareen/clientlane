@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
                 name: true,
                 email: true,
                 role: true,
-                email_verified: true,
+                emailVerified: true,
               },
             },
           },
@@ -60,11 +60,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if user's email is verified (magic links should bypass this but let's be safe)
-    if (!user.email_verified) {
+    if (!user.emailVerified) {
       // Auto-verify since they have access to email
       await prisma.user.update({
         where: { id: user.id },
-        data: { email_verified: true },
+        data: { emailVerified: new Date() },
       });
     }
 

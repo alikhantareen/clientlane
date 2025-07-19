@@ -21,14 +21,21 @@ export async function GET(req: NextRequest) {
     // Get user profile
     const user = await prisma.user.findUnique({
       where: { id: token.sub },
-      select: { id: true, name: true, email: true, image: true }
+      select: { id: true, name: true, email: true, image: true, password_hash: true }
     });
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ user });
+    // Return user data with hasPassword flag (don't expose actual password_hash)
+    const { password_hash, ...userProfile } = user;
+    const userResponse = {
+      ...userProfile,
+      hasPassword: password_hash !== null
+    };
+
+    return NextResponse.json({ user: userResponse });
   } catch (err) {
     console.error("Error fetching user profile:", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
@@ -124,10 +131,17 @@ export async function PATCH(req: NextRequest) {
     const updatedUser = await prisma.user.update({
       where: { id: token.sub },
       data: updateData,
-      select: { id: true, name: true, email: true, image: true }
+      select: { id: true, name: true, email: true, image: true, password_hash: true }
     });
 
-    return NextResponse.json({ user: updatedUser });
+    // Return user data with hasPassword flag (don't expose actual password_hash)
+    const { password_hash, ...userProfile } = updatedUser;
+    const userResponse = {
+      ...userProfile,
+      hasPassword: password_hash !== null
+    };
+
+    return NextResponse.json({ user: userResponse });
   } catch (err) {
     console.error("Error updating user profile:", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });

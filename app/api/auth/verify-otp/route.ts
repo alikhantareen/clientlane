@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     // Mark the user's email as verified
     await prisma.user.update({
       where: { email },
-      data: { email_verified: true } as any,
+      data: { emailVerified: new Date() } as any,
     });
     
     console.log("🎉 User verified successfully:", email);

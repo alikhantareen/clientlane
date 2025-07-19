@@ -8,6 +8,7 @@ interface UserProfile {
   name: string;
   email: string;
   image?: string;
+  hasPassword: boolean;
 }
 
 interface UserContextType {

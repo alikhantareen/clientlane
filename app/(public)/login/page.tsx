@@ -150,10 +150,8 @@ export default function LoginPage() {
       </div>
       <Button
         variant="outline"
-        className="w-full flex items-center justify-center gap-2 mb-6 border-gray-300"
-        // onClick={() => signIn("google")}
-        onClick={() => { /* Google sign-in deferred */ }}
-        disabled
+        className="w-full flex items-center justify-center gap-2 mb-6 border-gray-300 cursor-pointer"
+        onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
       >
         <img src="/google.svg" alt="Google" className="w-5 h-5" />
         Sign in with Google

@@ -15,6 +15,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
     
+    // Check if the user exists and if they signed up with Google (no password)
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+      select: { password_hash: true }
+    });
+    
+    if (existingUser && !existingUser.password_hash) {
+      return NextResponse.json({ 
+        error: "You signed up with Google and don't have a password. Please sign in using Google instead." 
+      }, { status: 400 });
+    }
+    
     const otp = generateOTP();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
     console.log("🔐 Generated OTP:", otp, "for email:", email);

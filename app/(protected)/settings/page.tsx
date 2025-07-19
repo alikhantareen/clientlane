@@ -413,12 +413,13 @@ export default function SettingsPage() {
           </form>
         </Card>
         
-        {/* Password Section */}
-        <Card className="p-6">
-          <div className="flex items-center gap-2 mb-6">
-            <Shield className="w-5 h-5" />
-            <h2 className="text-xl font-semibold">Change Password</h2>
-          </div>
+        {/* Password Section - Only show for users with passwords (not Google OAuth users) */}
+        {user?.hasPassword ? (
+          <Card className="p-6">
+            <div className="flex items-center gap-2 mb-6">
+              <Shield className="w-5 h-5" />
+              <h2 className="text-xl font-semibold">Change Password</h2>
+            </div>
           
           {passwordState === 'initial' ? (
             <div className="flex flex-col gap-4">
@@ -536,6 +537,20 @@ export default function SettingsPage() {
             </div>
           )}
         </Card>
+        ) : (
+          <Card className="p-6">
+            <div className="flex items-center gap-2 mb-6">
+              <Shield className="w-5 h-5" />
+              <h2 className="text-xl font-semibold">Password Settings</h2>
+            </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-blue-800">
+                You signed in with Google, so you don't have a password to change. 
+                Your account is secured through Google's authentication system.
+              </p>
+            </div>
+          </Card>
+        )}
       </div>
     </main>
   );

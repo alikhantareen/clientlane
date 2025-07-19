@@ -22,14 +22,18 @@ export default function ForgotPasswordPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
+      
       if (!response.ok) {
-        throw new Error("Failed to send OTP");
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to send OTP");
       }
+      
       toast.success("A 6-digit code has been sent to your email.");
       router.push(`/otp?email=${encodeURIComponent(email)}&source=forgot-password`);
       setEmail("");
     } catch (error) {
-      toast.error("Failed to send OTP");
+      const errorMessage = error instanceof Error ? error.message : "Failed to send OTP";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
