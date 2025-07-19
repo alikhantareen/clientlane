@@ -3,6 +3,7 @@ import { getToken } from "next-auth/jwt";
 import { prisma } from "@/lib/prisma";
 import { startOfMonth, endOfMonth, subMonths, format } from "date-fns";
 import { updateUserLastSeen } from "@/lib/utils/helpers";
+import { withDatabaseOperation, optimizedDatabaseQuery } from "@/lib/utils/database";
 
 export async function GET(req: NextRequest) {
   try {
@@ -38,66 +39,68 @@ export async function GET(req: NextRequest) {
     // Calculate offset for activity pagination
     const activityOffset = (activityPage - 1) * activityLimit;
 
-    // Get overview statistics
-    const [totalPortals, uniqueClients, totalUpdates, storageData, currentSubscription] = await Promise.all([
-      // Total portals created
-      prisma.portal.count({
-        where: { created_by: user.id }
-      }),
+    // Get overview statistics with optimized database operations
+    const [totalPortals, uniqueClients, totalUpdates, storageData, currentSubscription] = await withDatabaseOperation(async () => {
+      return await Promise.all([
+        // Total portals created
+        prisma.portal.count({
+          where: { created_by: user.id }
+        }),
 
-      // Total unique clients
-      prisma.portal.findMany({
-        where: { created_by: user.id },
-        select: { client_id: true },
-        distinct: ['client_id']
-      }),
+        // Total unique clients
+        prisma.portal.findMany({
+          where: { created_by: user.id },
+          select: { client_id: true },
+          distinct: ['client_id']
+        }),
 
-      // Total updates posted
-      prisma.update.count({
-        where: {
-          portal: {
-            created_by: user.id
-          }
-        }
-      }),
-
-      // Storage used calculation
-      prisma.file.aggregate({
-        where: {
-          portal: {
-            created_by: user.id
-          }
-        },
-        _sum: {
-          file_size: true
-        }
-      }),
-
-      // Current subscription
-      prisma.subscription.findFirst({
-        where: {
-          user_id: user.id,
-          is_active: true,
-          ends_at: {
-            gt: new Date()
-          }
-        },
-        include: {
-          plan: {
-            select: {
-              id: true,
-              name: true,
-              price: true,
-              currency: true,
-              billing_cycle: true
+        // Total updates posted
+        prisma.update.count({
+          where: {
+            portal: {
+              created_by: user.id
             }
           }
-        },
-        orderBy: {
-          starts_at: 'desc'
-        }
-      })
-    ]);
+        }),
+
+        // Storage used calculation
+        prisma.file.aggregate({
+          where: {
+            portal: {
+              created_by: user.id
+            }
+          },
+          _sum: {
+            file_size: true
+          }
+        }),
+
+        // Current subscription
+        prisma.subscription.findFirst({
+          where: {
+            user_id: user.id,
+            is_active: true,
+            ends_at: {
+              gt: new Date()
+            }
+          },
+          include: {
+            plan: {
+              select: {
+                id: true,
+                name: true,
+                price: true,
+                currency: true,
+                billing_cycle: true
+              }
+            }
+          },
+          orderBy: {
+            starts_at: 'desc'
+          }
+        })
+      ])
+    }, [0, [], 0, { _sum: { file_size: 0 } }, null]);
 
     // Calculate storage in MB/GB
     const storageBytes = storageData._sum.file_size || 0;
@@ -108,103 +111,131 @@ export async function GET(req: NextRequest) {
       ? `${storageGB.toFixed(2)} GB`
       : `${storageMB.toFixed(2)} MB`;
 
-    // Get monthly activity data for the last 12 months
+    // Get monthly activity data for the last 12 months - OPTIMIZED
     const months = [];
     const currentDate = new Date();
     
+    // Generate date ranges for the last 12 months
+    const monthRanges: Array<{
+      monthStart: Date;
+      monthEnd: Date;
+      monthLabel: string;
+    }> = [];
     for (let i = 11; i >= 0; i--) {
       const monthStart = startOfMonth(subMonths(currentDate, i));
       const monthEnd = endOfMonth(subMonths(currentDate, i));
-      
-      const [updatesCount, clientsCount] = await Promise.all([
-        prisma.update.count({
-          where: {
-            portal: {
-              created_by: user.id
-            },
-            created_at: {
-              gte: monthStart,
-              lte: monthEnd
-            }
-          }
-        }),
-        prisma.portal.count({
-          where: {
-            created_by: user.id,
-            created_at: {
-              gte: monthStart,
-              lte: monthEnd
-            }
-          }
-        })
-      ]);
-
-      months.push({
-        month: format(monthStart, 'MMM yyyy'),
-        updates: updatesCount,
-        clients: clientsCount
+      monthRanges.push({
+        monthStart,
+        monthEnd,
+        monthLabel: format(monthStart, 'MMM yyyy')
       });
     }
 
-    // Get top portals (most active by updates) with configurable limit
-    const topPortals = await prisma.portal.findMany({
-      where: { created_by: user.id },
-      include: {
-        client: {
-          select: {
-            name: true,
-            email: true
-          }
-        },
-        _count: {
-          select: {
-            updates: true
-          }
+    // Batch query for all monthly data in a single database operation with optimized connection management
+    const monthlyData = await optimizedDatabaseQuery(async () => {
+      return await prisma.$transaction(async (tx) => {
+        const results = [];
+        
+        for (const range of monthRanges) {
+          const [updatesCount, clientsCount] = await Promise.all([
+            tx.update.count({
+              where: {
+                portal: {
+                  created_by: user.id
+                },
+                created_at: {
+                  gte: range.monthStart,
+                  lte: range.monthEnd
+                }
+              }
+            }),
+            tx.portal.count({
+              where: {
+                created_by: user.id,
+                created_at: {
+                  gte: range.monthStart,
+                  lte: range.monthEnd
+                }
+              }
+            })
+          ]);
+          
+          results.push({
+            month: range.monthLabel,
+            updates: updatesCount,
+            clients: clientsCount
+          });
         }
-      },
-      orderBy: {
-        updates: {
-          _count: 'desc'
-        }
-      },
-      take: topPortalsLimit
-    });
+        
+        return results;
+      });
+    }, { timeout: 45000, retries: 2, fallback: [] });
 
-    // Get recent activity with pagination
-    const [recentActivity, totalActivityCount] = await Promise.all([
-      prisma.activity.findMany({
-        where: {
-          portal: {
-            created_by: user.id
-          }
-        },
+    months.push(...monthlyData);
+
+    // Get top portals (most active by updates) with configurable limit
+    const topPortals = await withDatabaseOperation(async () => {
+      return await prisma.portal.findMany({
+        where: { created_by: user.id },
         include: {
-          user: {
+          client: {
             select: {
               name: true,
               email: true
             }
           },
-          portal: {
+          _count: {
             select: {
-              name: true
+              updates: true
             }
           }
         },
         orderBy: {
-          created_at: 'desc'
-        },
-        take: activityLimit,
-        skip: activityOffset
-      }),
-      prisma.activity.count({
-        where: {
-          portal: {
-            created_by: user.id
+          updates: {
+            _count: 'desc'
           }
-        }
-      })
-    ]);
+        },
+        take: topPortalsLimit
+      });
+    }, []);
+
+    // Get recent activity with pagination
+    const [recentActivity, totalActivityCount] = await withDatabaseOperation(async () => {
+      return await Promise.all([
+        prisma.activity.findMany({
+          where: {
+            portal: {
+              created_by: user.id
+            }
+          },
+          include: {
+            user: {
+              select: {
+                name: true,
+                email: true
+              }
+            },
+            portal: {
+              select: {
+                name: true
+              }
+            }
+          },
+          orderBy: {
+            created_at: 'desc'
+          },
+          take: activityLimit,
+          skip: activityOffset
+        }),
+        prisma.activity.count({
+          where: {
+            portal: {
+              created_by: user.id
+            }
+          }
+        })
+      ]);
+    }, [[], 0]);
 
     return NextResponse.json({
       overview: {

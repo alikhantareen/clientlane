@@ -11,6 +11,31 @@ const nextConfig: NextConfig = {
     // your project has type errors.
     ignoreBuildErrors: true,
   },
+  // Production optimizations
+  experimental: {
+    // Optimize server components
+    serverComponentsExternalPackages: ['@prisma/client'],
+  },
+  // API route optimizations
+  async headers() {
+    return [
+      {
+        source: '/api/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, max-age=0',
+          },
+        ],
+      },
+    ];
+  },
+  // Environment-specific settings
+  ...(process.env.NODE_ENV === 'production' && {
+    // Production-specific optimizations
+    compress: true,
+    poweredByHeader: false,
+  }),
 };
 
 export default nextConfig;
