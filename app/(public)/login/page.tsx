@@ -28,6 +28,42 @@ export default function LoginPage() {
     }
   }, [searchParams]);
 
+  // Handle OAuth errors and clean up URL
+  useEffect(() => {
+    const error = searchParams?.get("error");
+    const hasOAuthParams = searchParams?.get("state") || searchParams?.get("code") || searchParams?.get("scope");
+    
+    // Clean up OAuth parameters if they exist (even without errors)
+    if (hasOAuthParams) {
+      const url = new URL(window.location.href);
+      const paramsToRemove = ["error", "callbackUrl", "state", "code", "scope", "authuser", "prompt"];
+      paramsToRemove.forEach(param => url.searchParams.delete(param));
+      window.history.replaceState({}, "", url.toString());
+    }
+    
+    if (error === "OAuthAccountNotLinked") {
+      toast.error("This email is already associated with a password account. Please sign in with your password instead.", {
+        duration: 5000,
+        action: {
+          label: "Use Password",
+          onClick: () => {
+            // Ensure URL is clean when button is clicked
+            const url = new URL(window.location.href);
+            const paramsToRemove = ["error", "callbackUrl", "state", "code", "scope", "authuser", "prompt"];
+            paramsToRemove.forEach(param => url.searchParams.delete(param));
+            window.history.replaceState({}, "", url.toString());
+            
+            // Focus on the email field to help user sign in with password
+            const emailInput = document.getElementById("email") as HTMLInputElement;
+            if (emailInput) {
+              emailInput.focus();
+            }
+          }
+        }
+      });
+    }
+  }, [searchParams]);
+
   const handleMagicLinkAuth = async (token: string) => {
     setMagicLinkLoading(true);
     try {
@@ -69,6 +105,25 @@ export default function LoginPage() {
       window.history.replaceState({}, "", url.toString());
     } finally {
       setMagicLinkLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      const result = await signIn("google", { 
+        callbackUrl: "/dashboard",
+        redirect: false 
+      });
+      
+      if (result?.error) {
+        if (result.error === "OAuthAccountNotLinked") {
+          toast.error("This email is already associated with a password account. Please sign in with your password instead.");
+        } else {
+          toast.error("Google sign-in failed. Please try again.");
+        }
+      }
+    } catch (error) {
+      toast.error("Google sign-in failed. Please try again.");
     }
   };
 
@@ -151,11 +206,18 @@ export default function LoginPage() {
       <Button
         variant="outline"
         className="w-full flex items-center justify-center gap-2 mb-6 border-gray-300 cursor-pointer"
-        onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+        onClick={handleGoogleSignIn}
       >
         <img src="/google.svg" alt="Google" className="w-5 h-5" />
         Sign in with Google
       </Button>
+      
+      <div className="text-center mb-4">
+        <p className="text-sm text-gray-600">
+          If you signed up with email/password, use the form below instead
+        </p>
+      </div>
+      
       <div className="flex items-center my-4">
         <div className="flex-1 h-px bg-gray-300" />
         <span className="mx-4 text-gray-500 font-medium">OR</span>

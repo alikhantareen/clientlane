@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +10,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { signIn } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
 
 const passwordSchema = z.string()
   .min(8, "Password must be at least 8 characters")
@@ -43,9 +44,35 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Handle OAuth errors
+  useEffect(() => {
+    const error = searchParams?.get("error");
+    const hasOAuthParams = searchParams?.get("state") || searchParams?.get("code") || searchParams?.get("scope");
+    
+    // Clean up OAuth parameters if they exist (even without errors)
+    if (hasOAuthParams) {
+      const url = new URL(window.location.href);
+      const paramsToRemove = ["error", "callbackUrl", "state", "code", "scope", "authuser", "prompt"];
+      paramsToRemove.forEach(param => url.searchParams.delete(param));
+      window.history.replaceState({}, "", url.toString());
+    }
+    
+    if (error === "OAuthAccountNotLinked") {
+      toast.error("This email is already associated with a password account. Please sign in with your password instead.", {
+        duration: 5000,
+        action: {
+          label: "Go to Login",
+          onClick: () => {
+            router.push("/login");
+          }
+        }
+      });
+    }
+  }, [searchParams, router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -53,11 +80,10 @@ export default function SignupPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
     setSuccess("");
     const parsed = registerSchema.safeParse(form);
     if (!parsed.success) {
-      setError(parsed.error.errors[0].message);
+      toast.error(parsed.error.errors[0].message);
       return;
     }
     setLoading(true);
@@ -92,7 +118,26 @@ export default function SignupPage() {
       setForm({ name: "", email: "", password: "", confirmPassword: "", role: "freelancer" });
     } else {
       const data = await res.json();
-      setError(data.error || "Registration failed");
+      toast.error(data.error || "Registration failed");
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      const result = await signIn("google", { 
+        callbackUrl: "/dashboard",
+        redirect: false 
+      });
+      
+      if (result?.error) {
+        if (result.error === "OAuthAccountNotLinked") {
+          toast.error("This email is already associated with a password account. Please sign in with your password instead.");
+        } else {
+          toast.error("Google sign-in failed. Please try again.");
+        }
+      }
+    } catch (error) {
+      toast.error("Google sign-in failed. Please try again.");
     }
   };
 
@@ -108,11 +153,12 @@ export default function SignupPage() {
       <Button
         variant="outline"
         className="w-full flex items-center justify-center gap-2 mb-6 border-gray-300 cursor-pointer"
-        onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+        onClick={handleGoogleSignIn}
       >
         <img src="/google.svg" alt="Google" className="w-5 h-5" />
         Sign in with Google
       </Button>
+      
       <div className="flex items-center my-4">
         <div className="flex-1 h-px bg-gray-300" />
         <span className="mx-4 text-gray-500 font-medium">OR</span>
@@ -202,7 +248,6 @@ export default function SignupPage() {
             <option value="freelancer">Freelancer</option>
           </select>
         </div>
-        {error && <div className="text-red-500 text-sm">{error}</div>}
         {success && <div className="text-green-600 text-sm">{success}</div>}
         <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-lg py-3 rounded-md cursor-pointer" disabled={loading}>
           {loading ? "Registering..." : "Sign Up"}

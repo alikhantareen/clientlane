@@ -20,11 +20,35 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 });
     }
     const { name, email, password, role } = parsed.data;
+    
     // Check if user already exists
-    const existing = await prisma.user.findUnique({ where: { email } });
+    const existing = await prisma.user.findUnique({ 
+      where: { email },
+      select: { 
+        id: true, 
+        password_hash: true,
+        accounts: {
+          where: { provider: "google" },
+          select: { provider: true }
+        }
+      }
+    });
+    
     if (existing) {
-      return NextResponse.json({ error: "Email already in use" }, { status: 400 });
+      // Check if user has Google OAuth account
+      const hasGoogleAccount = existing.accounts.some(account => account.provider === "google");
+      
+      if (hasGoogleAccount) {
+        return NextResponse.json({ 
+          error: "You are already signed up with Google. Please sign in using Google instead." 
+        }, { status: 400 });
+      } else {
+        return NextResponse.json({ 
+          error: "Email already in use. Please try signing in instead." 
+        }, { status: 400 });
+      }
     }
+    
     // Hash password
     const password_hash = await hash(password, 10);
     // Create user (email_verified defaults to false)

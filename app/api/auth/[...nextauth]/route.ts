@@ -42,6 +42,7 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
   },
+
   callbacks: {
     async session({ session, token }) {
       if (session.user && token) {
@@ -56,6 +57,7 @@ export const authOptions: NextAuthOptions = {
       }
       
       // For Google OAuth users without a role, set up the role and update the database
+      // Only for NEW users (not existing users who might have client role)
       if (account?.provider === "google" && token.sub && !token.role) {
         try {
           const dbUser = await prisma.user.findUnique({
@@ -64,7 +66,8 @@ export const authOptions: NextAuthOptions = {
           });
           
           if (dbUser && !dbUser.role) {
-            // Update the user with freelancer role and email verification
+            // Only set freelancer role for new users who don't have any role
+            // This prevents overriding existing client roles
             await prisma.user.update({
               where: { id: token.sub },
               data: { 
@@ -104,12 +107,27 @@ export const authOptions: NextAuthOptions = {
           });
           
           if (existingUser) {
-            // Update existing user to ensure role and verification
+            // Check if this Google account is already linked to the existing user
+            const existingAccount = await prisma.account.findFirst({
+              where: {
+                userId: existingUser.id,
+                provider: "google",
+                providerAccountId: account.providerAccountId
+              }
+            });
+
+            if (!existingAccount) {
+              // This is a new Google account trying to link to existing user
+              // We'll allow this linking to happen automatically
+              console.log(`Linking Google account to existing user: ${user.email}`);
+            }
+
+            // Update existing user to ensure verification, but preserve their role
             await prisma.user.update({
               where: { email: user.email },
               data: { 
-                role: existingUser.role || "freelancer", // Set role as freelancer if not already set
                 emailVerified: new Date() // Google OAuth users have verified emails
+                // Don't change the role - preserve existing role (client/freelancer)
               }
             });
           }
@@ -146,6 +164,7 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: "/login",
+    error: "/login", // Redirect to login page on errors
   },
   secret: process.env.NEXTAUTH_SECRET,
 };

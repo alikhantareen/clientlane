@@ -413,141 +413,163 @@ export default function SettingsPage() {
           </form>
         </Card>
         
-        {/* Password Section - Only show for users with passwords (not Google OAuth users) */}
+        {/* Password Section - Show for users with passwords, with clear messaging */}
         {user?.hasPassword ? (
           <Card className="p-6">
             <div className="flex items-center gap-2 mb-6">
               <Shield className="w-5 h-5" />
-              <h2 className="text-xl font-semibold">Change Password</h2>
+              <h2 className="text-xl font-semibold">Password Authentication</h2>
+            </div>
+            
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 mt-0.5">
+                  <Shield className="w-4 h-4 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-blue-800 font-medium">Password Authentication</p>
+                  <p className="text-blue-700 text-sm mt-1">
+                    You have a password set up for your account. You can change it below.
+                  </p>
+                </div>
+              </div>
             </div>
           
-          {passwordState === 'initial' ? (
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="currentPassword">Current Password</Label>
-                <div className="relative">
-                  <Input
-                    id="currentPassword"
-                    name="currentPassword"
-                    type={showCurrentPassword ? "text" : "password"}
-                    placeholder="Enter your current password"
-                    value={passwordForm.currentPassword}
-                    onChange={handlePasswordChange}
-                    className="pr-10"
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
-                    onClick={() => setShowCurrentPassword(v => !v)}
-                    tabIndex={-1}
-                  >
-                    {showCurrentPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
+            {passwordState === 'initial' ? (
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="currentPassword">Current Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="currentPassword"
+                      name="currentPassword"
+                      type={showCurrentPassword ? "text" : "password"}
+                      placeholder="Enter your current password"
+                      value={passwordForm.currentPassword}
+                      onChange={handlePasswordChange}
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                      onClick={() => setShowCurrentPassword(v => !v)}
+                      tabIndex={-1}
+                    >
+                      {showCurrentPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
                 </div>
-              </div>
-              
-              <Button 
-                onClick={handleVerifyPassword}
-                disabled={!passwordForm.currentPassword || passwordLoading}
-                className="bg-blue-600 text-white hover:bg-blue-700 gap-2 w-fit cursor-pointer disabled:cursor-not-allowed"
-              >
-                {passwordLoading ? (
-                  "Verifying..."
-                ) : (
-                  <>
-                    <Check className="w-4 h-4" />
-                    Verify
-                  </>
-                )}
-              </Button>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="newPassword">New Password</Label>
-                <div className="relative">
-                  <Input
-                    id="newPassword"
-                    name="newPassword"
-                    type={showNewPassword ? "text" : "password"}
-                    placeholder="Enter new password"
-                    value={passwordForm.newPassword}
-                    onChange={handlePasswordChange}
-                    className="pr-10"
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
-                    onClick={() => setShowNewPassword(v => !v)}
-                    tabIndex={-1}
-                  >
-                    {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
-              </div>
-              
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                <div className="relative">
-                  <Input
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    type={showConfirmPassword ? "text" : "password"}
-                    placeholder="Confirm new password"
-                    value={passwordForm.confirmPassword}
-                    onChange={handlePasswordChange}
-                    className="pr-10"
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
-                    onClick={() => setShowConfirmPassword(v => !v)}
-                    tabIndex={-1}
-                  >
-                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
-              </div>
-              
-              <div className="flex gap-3">
+                
                 <Button 
-                  onClick={handleUpdatePassword}
-                  disabled={!passwordForm.newPassword || !passwordForm.confirmPassword || passwordLoading}
-                  className="bg-blue-600 text-white hover:bg-blue-700 gap-2 cursor-pointer disabled:cursor-not-allowed"
+                  onClick={handleVerifyPassword}
+                  disabled={!passwordForm.currentPassword || passwordLoading}
+                  className="bg-blue-600 text-white hover:bg-blue-700 gap-2 w-fit cursor-pointer disabled:cursor-not-allowed"
                 >
                   {passwordLoading ? (
-                    "Updating..."
+                    "Verifying..."
                   ) : (
                     <>
                       <Check className="w-4 h-4" />
-                      Update Password
+                      Verify
                     </>
                   )}
                 </Button>
-                
-                <Button 
-                  onClick={handleCancelPasswordChange}
-                  variant="outline"
-                  className="gap-2 cursor-pointer disabled:cursor-not-allowed"
-                >
-                  <X className="w-4 h-4" />
-                  Cancel
-                </Button>
               </div>
-            </div>
-          )}
-        </Card>
+            ) : (
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="newPassword">New Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="newPassword"
+                      name="newPassword"
+                      type={showNewPassword ? "text" : "password"}
+                      placeholder="Enter new password"
+                      value={passwordForm.newPassword}
+                      onChange={handlePasswordChange}
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                      onClick={() => setShowNewPassword(v => !v)}
+                      tabIndex={-1}
+                    >
+                      {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      type={showConfirmPassword ? "text" : "password"}
+                      placeholder="Confirm new password"
+                      value={passwordForm.confirmPassword}
+                      onChange={handlePasswordChange}
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                      onClick={() => setShowConfirmPassword(v => !v)}
+                      tabIndex={-1}
+                    >
+                      {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="flex gap-3">
+                  <Button 
+                    onClick={handleUpdatePassword}
+                    disabled={!passwordForm.newPassword || !passwordForm.confirmPassword || passwordLoading}
+                    className="bg-blue-600 text-white hover:bg-blue-700 gap-2 cursor-pointer disabled:cursor-not-allowed"
+                  >
+                    {passwordLoading ? (
+                      "Updating..."
+                    ) : (
+                      <>
+                        <Check className="w-4 h-4" />
+                        Update Password
+                      </>
+                    )}
+                  </Button>
+                  
+                  <Button 
+                    onClick={handleCancelPasswordChange}
+                    variant="outline"
+                    className="gap-2 cursor-pointer disabled:cursor-not-allowed"
+                  >
+                    <X className="w-4 h-4" />
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+          </Card>
         ) : (
           <Card className="p-6">
             <div className="flex items-center gap-2 mb-6">
               <Shield className="w-5 h-5" />
-              <h2 className="text-xl font-semibold">Password Settings</h2>
+              <h2 className="text-xl font-semibold">Google Authentication</h2>
             </div>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <p className="text-blue-800">
-                You signed in with Google, so you don't have a password to change. 
-                Your account is secured through Google's authentication system.
-              </p>
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 mt-0.5">
+                  <img src="/google.svg" alt="Google" className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-green-800 font-medium">Google OAuth Authentication</p>
+                  <p className="text-green-700 text-sm mt-1">
+                    You signed in with Google, so you don't have a password to change. 
+                    Your account is secured through Google's authentication system.
+                  </p>
+                </div>
+              </div>
             </div>
           </Card>
         )}
