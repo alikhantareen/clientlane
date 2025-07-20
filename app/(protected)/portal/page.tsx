@@ -174,6 +174,27 @@ export default function AllPortalsPage() {
   const handlePortalCreated = () => {
     fetchPortals(1, true);
     setCreateDialogOpen(false);
+    
+    // Re-check portal creation limits after successful creation
+    const recheckLimits = async () => {
+      if (!session?.user || user?.role !== "freelancer") return;
+      
+      try {
+        const response = await fetch('/api/plan-limits/check-portal-creation');
+        const data = await response.json();
+        
+        setCanCreatePortal(data.allowed);
+        if (!data.allowed) {
+          setLimitMessage(data.reason || "Unable to create portal");
+        } else {
+          setLimitMessage(""); // Clear any previous limit messages
+        }
+      } catch (error) {
+        console.error('Error rechecking portal limits:', error);
+      }
+    };
+    
+    recheckLimits();
   };
 
   return (

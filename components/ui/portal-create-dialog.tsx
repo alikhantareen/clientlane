@@ -131,6 +131,25 @@ export default function PortalCreateDialog({
     checkLimits();
   }, [session]);
 
+  // Function to re-check portal creation limits
+  const recheckPortalLimits = async () => {
+    if (!session?.user) return;
+
+    try {
+      const response = await fetch("/api/plan-limits/check-portal-creation");
+      const data = await response.json();
+      
+      setCanCreatePortal(data.allowed);
+      if (!data.allowed) {
+        setLimitMessage(data.reason || "Unable to create portal");
+      } else {
+        setLimitMessage(""); // Clear any previous limit messages
+      }
+    } catch (error) {
+      console.error("Error rechecking portal limits:", error);
+    }
+  };
+
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
@@ -204,6 +223,7 @@ export default function PortalCreateDialog({
         onOpenChange(false);
         if (onSuccess) onSuccess();
         if (onPortalCreated) onPortalCreated();
+        recheckPortalLimits(); // Re-check limits after successful creation
       } else {
         const errorMessage =
           data.error ||
