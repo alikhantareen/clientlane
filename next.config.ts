@@ -55,6 +55,14 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  // Vercel-specific optimizations
+  experimental: {
+    serverComponentsExternalPackages: ['@prisma/client'],
+  },
+  // Optimize for serverless
+  ...(process.env.NODE_ENV === 'production' && {
+    output: 'standalone',
+  }),
   // Environment-specific settings
   ...(process.env.NODE_ENV === 'production' && {
     // Production-specific optimizations

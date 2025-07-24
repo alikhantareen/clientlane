@@ -72,8 +72,8 @@ export async function GET(req: NextRequest) {
 
       where.OR = [
         { name: { contains: search, mode: "insensitive" } },
-        { client: { is: { name: { contains: search, mode: "insensitive" } } } },
-        { client: { is: { email: { contains: search, mode: "insensitive" } } } },
+        { client: { name: { contains: search, mode: "insensitive" } } },
+        { client: { email: { contains: search, mode: "insensitive" } } },
       ];
 
       // Add status matching only if there are matching statuses
@@ -119,6 +119,18 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ portals: data, total });
   } catch (err) {
     console.error("Error fetching portals:", err);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    // Add more detailed error logging for Vercel debugging
+    if (process.env.NODE_ENV === 'production') {
+      console.error("Portal API Error Details:", {
+        message: err instanceof Error ? err.message : 'Unknown error',
+        stack: err instanceof Error ? err.stack : undefined,
+        timestamp: new Date().toISOString(),
+        userAgent: req.headers.get('user-agent'),
+      });
+    }
+    return NextResponse.json({ 
+      error: "Server error",
+      message: process.env.NODE_ENV === 'development' ? err instanceof Error ? err.message : 'Unknown error' : 'Internal server error'
+    }, { status: 500 });
   }
 } 

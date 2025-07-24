@@ -16,6 +16,7 @@ export async function middleware(request: NextRequest) {
                       path.startsWith('/reset-password') ||
                       path.startsWith('/otp') ||
                       path.startsWith('/api/auth') ||
+                      path.startsWith('/api/health') ||
                       path.startsWith('/_next') ||
                       path.startsWith('/favicon.ico')
 

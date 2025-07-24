@@ -101,8 +101,18 @@ export async function GET(req: NextRequest) {
 
   } catch (error) {
     console.error('Error getting plan limits:', error);
+    // Add more detailed error logging for Vercel debugging
+    if (process.env.NODE_ENV === 'production') {
+      console.error("Plan Limits API Error Details:", {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        timestamp: new Date().toISOString(),
+        userAgent: req.headers.get('user-agent'),
+      });
+    }
     return NextResponse.json({ 
-      error: "Internal server error" 
+      error: "Internal server error",
+      message: process.env.NODE_ENV === 'development' ? error instanceof Error ? error.message : 'Unknown error' : 'Internal server error'
     }, { status: 500 });
   }
 } 
