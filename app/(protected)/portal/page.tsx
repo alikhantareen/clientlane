@@ -1,7 +1,8 @@
 "use client";
 import Link from "next/link";
 import { Plus } from "lucide-react";
-import { PortalCard, PortalCardSkeleton } from "@/components/ui";
+import { PortalCard } from "@/components/ui";
+import { PortalCardSkeleton } from "@/components/skeletons/PortalCardSkeleton";
 import { useEffect, useState } from "react";
 import DefaultPortalImage from "@/public/defaultPortalImage.png";
 import { Calendar } from "@/components/ui/calendar";
