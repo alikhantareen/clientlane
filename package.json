@@ -6,6 +6,7 @@
     "dev": "node server.js",
     "dev:turbo": "next dev --turbopack",
     "build": "node build-production.js",
+    "build:simple": "prisma generate && next build",
     "build:migrate": "prisma generate && prisma migrate deploy && next build",
     "start": "NODE_ENV=production node server.js",
     "start:next": "next start",
